@@ -1,0 +1,28 @@
+### Điều hướng url khi không tồn tại file hoặc thư mục thì luôn chuyển về trang index.php
+# Tiêm vào url kí tự đặc biệt, khoảng trắng
+
+# Bật engine rewrite
+RewriteEngine On
+
+# (Tuỳ chọn) Đặt RewriteBase nếu site nằm trong thư mục con, ví dụ: RewriteBase /myapp/
+# RewriteBase /
+
+# Chặn truy cập trực tiếp vào chính file .htaccess
+<Files ".htaccess">
+    Require all denied
+</Files>
+
+# Nếu request KHÔNG phải là index.php (tránh lặp vô hạn)
+RewriteCond %{REQUEST_URI} !^/index\.php$
+
+# Nếu không tồn tại FILE thực tế tương ứng với request
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# Và không tồn tại THƯ MỤC thực tế tương ứng với request
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Điều hướng mọi trường hợp còn lại về index.php, giữ nguyên phần url gốc
+# Cờ B: escape các ký tự đặc biệt (khoảng trắng, &, %, ...) khi đưa vào backreference $1
+# Cờ QSA: giữ lại query string gốc (nếu có) và gộp thêm vào
+# Cờ L: dừng xử lý rewrite tại rule này
+RewriteRule ^(.*)$ index.php?url=$1 [B,QSA,L]
