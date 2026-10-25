@@ -14,6 +14,10 @@ class Address extends Model {
         return $this->fetchOne($sql, [$id, $userId]);
     }
 
+    public function findById(int $id, int $userId): ?array {
+        return $this->getById($id, $userId);
+    }
+
     public function getDefault(int $userId): ?array {
         $sql = "SELECT * FROM `dia_chi` WHERE `nguoi_dung_id` = ? AND `mac_dinh` = 1 LIMIT 1";
         $address = $this->fetchOne($sql, [$userId]);

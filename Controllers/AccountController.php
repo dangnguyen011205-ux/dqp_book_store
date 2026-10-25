@@ -5,15 +5,18 @@ use Core\Controller;
 use Core\Auth;
 use Models\User;
 use Models\Address;
+use Models\Order;
 
 class AccountController extends Controller {
     protected User $userModel;
     protected Address $addressModel;
+    protected Order $orderModel;
 
     public function __construct() {
         Auth::requireLogin();
         $this->userModel = new User();
         $this->addressModel = new Address();
+        $this->orderModel = new Order();
     }
 
     /**
@@ -200,10 +203,67 @@ class AccountController extends Controller {
     }
 
     /**
-     * Quản lý đơn hàng của tôi (Sẵn sàng phục vụ Giai đoạn 3)
+     * Danh sách đơn hàng của tôi kèm bộ lọc tabs trạng thái
      */
     public function orders(): void {
-        // Tạm chuyển tiếp tới trang đơn hàng hoặc thông báo
-        redirect('tai-khoan');
+        $userId = Auth::id();
+        $user = $this->userModel->findById($userId);
+        $status = $_GET['status'] ?? 'tat_ca';
+
+        $orders = $this->orderModel->getUserOrders($userId, $status);
+        $counts = $this->orderModel->getOrderCounts($userId);
+
+        $this->view('client.account.orders', [
+            'title'          => 'Lịch Sử & Theo Dõi Đơn Hàng | ' . APP_NAME,
+            'user'           => $user,
+            'orders'         => $orders,
+            'counts'         => $counts,
+            'currentStatus'  => $status,
+            'activeMenu'     => 'orders'
+        ]);
+    }
+
+    /**
+     * Xem chi tiết một đơn hàng kèm Timeline Stepper 4 bước
+     */
+    public function orderDetail(string $id): void {
+        $userId = Auth::id();
+        $user = $this->userModel->findById($userId);
+        $orderId = (int)$id;
+
+        $order = $this->orderModel->getOrderDetail($orderId, $userId);
+        if (!$order) {
+            flash('error', 'Không tìm thấy đơn hàng yêu cầu.');
+            redirect('tai-khoan/don-hang');
+        }
+
+        $this->view('client.account.order_detail', [
+            'title'      => 'Chi Tiết Đơn Hàng #BK-' . $order['id'] . ' | ' . APP_NAME,
+            'user'       => $user,
+            'order'      => $order,
+            'activeMenu' => 'orders'
+        ]);
+    }
+
+    /**
+     * Hủy đơn hàng trực tuyến an toàn bằng Transaction
+     */
+    public function cancelOrder(string $id): void {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $userId = Auth::id();
+            $orderId = (int)$id;
+            $reason = trim($_POST['ly_do_huy'] ?? '');
+
+            $result = $this->orderModel->cancelOrder($orderId, $userId, $reason);
+            if ($result['success']) {
+                flash('success', $result['message']);
+            } else {
+                flash('error', $result['message']);
+            }
+
+            redirect('tai-khoan/don-hang');
+        }
+
+        redirect('tai-khoan/don-hang');
     }
 }

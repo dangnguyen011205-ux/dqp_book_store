@@ -45,10 +45,13 @@ class App {
         'gio-hang/xoa/(\d+)'                => ['CartController', 'remove'],
         'gio-hang/xoa-tat-ca'               => ['CartController', 'clear'],
         'gio-hang/ap-dung-voucher'          => ['CartController', 'applyCoupon'],
+        'gio-hang/go-voucher'               => ['CartController', 'removeCoupon'],
         'thanh-toan'                        => ['CheckoutController', 'index'],
         'thanh-toan/dat-hang'               => ['CheckoutController', 'process'],
         'thanh-toan/thanh-cong/(\d+)'       => ['CheckoutController', 'success'],
         'tra-cuu-don-hang'                  => ['AccountController', 'orders'],
+        'tai-khoan/don-hang/chi-tiet/(\d+)' => ['AccountController', 'orderDetail'],
+        'tai-khoan/don-hang/(\d+)'          => ['AccountController', 'orderDetail'],
 
         // Admin Dashboard & Quản lý
         'admin'                             => ['AdminDashboardController', 'index'],

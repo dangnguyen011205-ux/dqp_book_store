@@ -1,7 +1,7 @@
 # BÁO CÁO TIẾN ĐỘ DỰ ÁN (PROJECT PROGRESS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
-> **Cập nhật:** Hoàn thành 100% Giai đoạn 2 / Chuẩn bị bước vào Giai đoạn 3  
-> **Thời điểm cập nhật:** 24/10/2026  
+> **Cập nhật:** Hoàn thành 100% Giai đoạn 3 / Sẵn sàng bước vào Giai đoạn 4 (Admin Portal)  
+> **Thời điểm cập nhật:** 25/10/2026  
 
 ---
 
@@ -42,73 +42,92 @@
 
 ---
 
+### Giai đoạn 3: Giỏ Hàng, Mã Giảm Giá, Đặt Hàng & Quản Lý Đơn Hàng Độc Giả (Hoàn thành 100%)
+
+| Hạng mục | Tệp tin thực tế | Trạng thái | Bằng chứng kiểm thử |
+|:---|:---|:---:|:---|
+| **Model Mã Giảm Giá (`Coupon`)** | `Models/Coupon.php` | Hoàn thành | - `validateCoupon()`: Kiểm tra tồn tại, thời hạn, đơn tối thiểu, số lượt tối đa, tính số tiền giảm theo % hoặc tiền mặt.<br>- Đã test tự động với mã hợp lệ `WELCOME2026`, đơn dưới tối thiểu, mã không tồn tại. |
+| **Model Giỏ Hàng Nâng Cao (`Cart`)** | `Models/Cart.php` | Hoàn thành | - `getItemCount()`, `getItems()`: Tương thích cả khách vãng lai (`$_SESSION['cart']`) và thành viên (`gio_hang`, `chi_tiet_gio_hang`).<br>- `addItem()`: Kiểm tra tồn kho thời gian thực, chặn thêm quá số lượng tồn.<br>- `mergeSessionCart()`: Tự động gộp giỏ hàng session vào tài khoản CSDL khi đăng nhập (`AuthController::login`). |
+| **Model Đơn Hàng Giao Tác (`Order`)** | `Models/Order.php` | Hoàn thành | - `createOrder()`: Khóa dòng kiểm tra tồn kho (`SELECT ... FOR UPDATE`), trừ tồn kho, tạo `don_hang`, tạo `chi_tiet_don_hang`, tăng `da_dung` của voucher, tạo `thanh_toan` (COD/VNPAY), ghi log `lich_su_don_hang`, xóa giỏ hàng bằng Database Transaction.<br>- `getUserOrders()`: Danh sách đơn hàng theo tab trạng thái.<br>- `getOrderDetail()`: Chi tiết đơn hàng, sản phẩm, và toàn bộ lịch sử vận chuyển.<br>- `cancelOrder()`: Hủy đơn an toàn khi đơn ở `cho_xac_nhan`, hoàn trả tồn kho, giảm số lượt dùng voucher, ghi log hủy kèm lý do. |
+| **Bộ Điều Khiển Giỏ Hàng (`CartController`)** | `Controllers/CartController.php` | Hoàn thành | Các actions: `index`, `add` (hỗ trợ Mua Ngay và Thêm Giỏ), `update` (+ / -), `remove`, `clear`, `applyCoupon`, `removeCoupon`. |
+| **Bộ Điều Khiển Thanh Toán (`CheckoutController`)** | `Controllers/CheckoutController.php` | Hoàn thành | Các actions: `index`, `process` (chọn địa chỉ có sẵn từ sổ địa chỉ hoặc nhập mới, chọn vận chuyển tiêu chuẩn / hỏa tốc, thanh toán COD / VNPAY), `success` (hiển thị trang xác nhận). |
+| **Quản Lý Đơn Hàng Độc Giả (`AccountController`)** | `Controllers/AccountController.php` | Hoàn thành | Các actions: `orders()` (lọc theo tabs trạng thái, đếm số lượng), `orderDetail($id)`, `cancelOrder($id)`. |
+| **Giao Diện Giỏ Hàng** | `Views/client/cart.php` | Hoàn thành | Dựa trên `gi_h_ng_thanh_to_n_bookstore/code.html`: Stepper tiến độ, danh sách sách, bộ chọn số lượng, xóa món, xóa tất cả, form nhập voucher, danh sách mã có sẵn gợi ý, tóm tắt chi phí, nút Tiếp tục mua hàng và Tiến hành đặt hàng. |
+| **Giao Diện Thanh Toán** | `Views/client/checkout.php` | Hoàn thành | Dựa trên `thanh_to_n_x_c_nh_n_n_h_ng_bookstore/code.html`: Chọn địa chỉ có sẵn kèm badge mặc định, form nhập địa chỉ mới, chọn phương thức giao hàng, chọn phương thức thanh toán COD/VNPAY, sticky tóm tắt đơn hàng. |
+| **Giao Diện Đặt Hàng Thành Công** | `Views/client/checkout_success.php` | Hoàn thành | Hiển thị mã đơn hàng `#BK-...`, bento grid chi tiết ngày đặt, trạng thái, thanh toán, địa chỉ nhận hàng, danh sách sách, nút theo dõi hành trình đơn hàng. |
+| **Giao Diện Quản Lý Đơn Hàng** | `Views/client/account/orders.php` | Hoàn thành | Dựa trên `qu_n_l_n_h_ng_bookstore/code.html`: Tích hợp sidebar độc giả, thanh Tabs trạng thái kèm số lượng đếm, thẻ đơn hàng tóm tắt, nút Theo dõi vận đơn, modal popup hủy đơn hàng. |
+| **Giao Diện Chi Tiết Đơn Hàng & Timeline Stepper** | `Views/client/account/order_detail.php` | Hoàn thành | Dựa trên `qu_n_l_theo_d_i_n_h_ng_bookstore/code.html`: **Timeline Stepper 4 bước** trực quan theo Design System Athenaeum Modern, hành trình vận đơn từ `lich_su_don_hang`, thông tin giao nhận, thanh toán, danh sách sản phẩm, modal hủy đơn kèm lý do. |
+| **Kiểm Thử Tích Hợp Tự Động (Integration Test)** | `scratch/test_stage3.php` | Hoàn thành | 14 test cases chạy qua PHP CLI đạt kết quả 100% Passed (Coupon, Cart, Transaction tạo đơn, trừ tồn kho, Timeline, Hủy đơn, hoàn trả tồn kho). |
+| **Kiểm Thử Thực Tế Trình Duyệt (Browser E2E)** | Browser Subagent | Hoàn thành | Đã quay video và chụp ảnh màn hình luồng thực tế: Đăng nhập -> Thêm giỏ -> Áp dụng mã `WELCOME2026` (-23.700đ) -> Đặt hàng COD -> Trang thành công `#BK-7` -> Danh sách đơn hàng -> Chi tiết đơn hàng với Timeline Stepper 4 bước -> Hủy đơn hàng và cập nhật huy hiệu `ĐÃ HỦY`. |
+
+---
+
 ## 2. NHỮNG VIỆC ĐÃ TRIỂN KHAI NHƯNG CẦN KIỂM THỬ MỞ RỘNG
-- **Admin Dashboard Layout (`Views/admin/dashboard.php`):** Hiện đã dựng khung và 4 Bento KPI cards nạp số liệu từ bảng `nguoi_dung`, `sach`, `don_hang`. Sẽ hoàn thiện biểu đồ doanh thu SVG và bảng đơn hàng mới cần duyệt ở Giai đoạn 4.
-- **Nút Thêm Giỏ Hàng & Mua Ngay ở Client:** Các form POST trỏ đến `/gio-hang/them` đã có sẵn các trường `sach_id`, `so_luong`. Sẽ được kết nối xử lý trọn vẹn trong Giai đoạn 3 khi xây dựng `CartController`.
+- **Admin Dashboard Layout (`Views/admin/dashboard.php`):** Khung tổng quan và 4 Bento KPI cards đã nạp số liệu thực từ CSDL. Sẽ hoàn thiện biểu đồ doanh thu SVG, biểu đồ phân bổ thể loại, và danh sách đơn hàng cần xử lý trong Giai đoạn 4.
+- **Thanh toán VNPAY Online Sandbox:** Đã sẵn sàng bản ghi và mã giao dịch giả lập, sẵn sàng cấu hình URL Sandbox VNPAY khi đưa vào production.
 
 ---
 
-## 3. CÁC LỖI & VẤN ĐỀ ĐANG TỒN TẠI
-- **Lệnh Git trong môi trường PowerShell:** Biến môi trường PATH của hệ điều hành hiện tại chưa bao gồm đường dẫn `git.exe`. Mọi thay đổi được kiểm soát trực tiếp trên hệ thống tệp tin local và ghi nhận đầy đủ qua các tài liệu bàn giao `PROJECT_CONTEXT.md`, `PROGRESS.md`, `TASKS.md`.
-- **Tệp tin rác/tạm thời:** Đã dọn dẹp sạch sẽ, không có tệp tin thừa trong codebase.
+## 3. CÁC LỖI & VẤN ĐỀ ĐÃ KHẮC PHỤC
+1. **Lỗi gọi tên hàm `Address::findById()` trong CheckoutController:**
+   - *Nguyên nhân:* Model `Address` ban đầu chỉ khai báo `getById($id, $userId)`.
+   - *Khắc phục:* Đã bổ sung alias `findById()` trong `Models/Address.php` và đồng bộ lời gọi hàm trong `CheckoutController.php`.
+2. **Lệnh `curl` trong PowerShell:**
+   - *Nguyên nhân:* PowerShell gán alias `curl` sang `Invoke-WebRequest`.
+   - *Khắc phục:* Sử dụng trực tiếp `curl.exe` cho mọi request kiểm thử HTTP.
+3. **Phân trang khi lọc số sao trong `Book::filterBooks()`:**
+   - *Khắc phục:* Tách count query thành subquery khi có mệnh đề `HAVING`, đảm bảo phân trang đồng bộ 100%.
 
 ---
 
-## 4. NHỮNG VIỆC CHƯA HOÀN THÀNH (THEO LỘ TRÌNH KẾ TIẾP)
-
-### Giai đoạn 3: Giỏ Hàng, Đặt Hàng & Quản Lý Đơn Hàng Độc Giả (Bắt đầu ngay)
-- **Model Mã Giảm Giá & Đơn Hàng:** `Models/Coupon.php`, `Models/Order.php`.
-- **Giỏ hàng (`CartController`, `Views/client/cart.php`):** Thêm sách vào giỏ (kiểm tra tồn kho), cập nhật số lượng (+ / -), xóa món, tính tổng tiền.
-- **Áp dụng voucher (`ma_giam_gia`):** Kiểm tra thời hạn, giá trị đơn tối thiểu, giới hạn số lượt sử dụng.
-- **Thanh toán & Đặt hàng (`CheckoutController`, `Views/client/checkout.php`):**
-  - Chọn địa chỉ từ bảng `dia_chi` hoặc nhập địa chỉ mới.
-  - Chọn phương thức vận chuyển và phương thức thanh toán (COD hoặc VNPAY/Chuyển khoản).
-  - Sử dụng **Database Transaction** thực hiện chuỗi giao tác: tạo `don_hang`, tạo `chi_tiet_don_hang`, trừ `so_luong_ton` trong `sach`, tăng `da_dung` của `ma_giam_gia`, tạo bản ghi `thanh_toan`, ghi log vào `lich_su_don_hang`, xóa sạch giỏ hàng.
-- **Quản lý đơn hàng độc giả (`AccountController@orders`, `Views/client/orders.php`):**
-  - Danh sách đơn hàng phân theo Tabs trạng thái (`cho_xac_nhan`, `da_xac_nhan`, `dang_giao`, `hoan_thanh`, `da_huy`).
-  - Lộ trình vận đơn với **Timeline Stepper 4 bước** trực quan dựa trên bảng `lich_su_don_hang`.
-  - Hủy đơn hàng khi còn ở trạng thái `cho_xac_nhan` (hoàn tồn kho, hoàn lượt voucher, ghi log hủy).
+## 4. NHỮNG VIỆC CHƯA HOÀN THÀNH (GIAI ĐOẠN 4 - ADMIN PORTAL)
 
 ### Giai đoạn 4: Toàn Bộ Phân Hệ Quản Trị (Admin Portal)
-- Hoàn thiện Admin Dashboard: Biểu đồ doanh thu SVG, biểu đồ phân bổ thể loại, cảnh báo kho.
-- CRUD Sách, Tác giả, Thể loại, Nhà xuất bản (hỗ trợ upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`, Modal `#modal-add-book`).
-- Quản lý Tồn kho & Phiếu kho (`phieu_kho`): Lập phiếu kho qua Modal `#modal-quick-slip` (nhập, xuất, điều chỉnh) bằng Transaction.
-- Quản lý đơn hàng: Đổi trạng thái, tự động ghi log vào `lich_su_don_hang`, hoàn kho khi hủy đơn.
-- Quản lý Mã giảm giá & Quản lý Người dùng (phân quyền, khóa/mở khóa tài khoản).
-- Quản lý & Duyệt Đánh giá (`danh_gia`): Duyệt hiển thị (`hien_thi`) hoặc ẩn (`an`).
+- **1. Admin Dashboard Tương Tác:**
+  - Hoàn thiện 4 Bento KPI cards (Doanh thu thực, Đơn hàng mới, Tổng đầu sách, Độc giả đăng ký).
+  - Biểu đồ doanh thu SVG (doanh thu theo tháng/tuần).
+  - Bảng cảnh báo tồn kho (sách có `so_luong_ton <= 5`).
+  - Danh sách đơn hàng mới cần xử lý (`cho_xac_nhan`).
+- **2. Quản Lý Sách & Danh Mục (CRUD Sách, Thể loại, Tác giả, NXB):**
+  - Danh sách sách với bộ lọc quản trị, tìm kiếm theo từ khóa/danh mục.
+  - Modal thêm sách `#modal-add-book` (nhập thông tin, tải ảnh bìa lên `Public/uploads/books/`, gán nhiều tác giả qua bảng `sach_tac_gia`).
+  - Sửa thông tin sách và chuyển đổi trạng thái đang bán (`dang_ban = 1/0`).
+- **3. Quản Lý Kho & Phiếu Kho (`phieu_kho`):**
+  - Bảng theo dõi tồn kho, cảnh báo sách sắp hết.
+  - Modal lập phiếu kho nhanh `#modal-quick-slip` (Phiếu nhập `nhap`, Phiếu xuất `xuat`, Điều chỉnh `kiem_ke`).
+  - Tự động cộng/trừ tồn kho trong `sach` bằng Database Transaction khi lưu phiếu kho.
+- **4. Quản Lý Đơn Hàng Admin:**
+  - Bảng danh sách đơn hàng có bộ lọc trạng thái, tìm kiếm theo mã đơn / tên khách.
+  - Modal/Trang chi tiết đơn hàng: Cập nhật trạng thái (`cho_xac_nhan` -> `da_xac_nhan` -> `dang_giao` -> `hoan_thanh` / `da_huy`).
+  - Tự động ghi log vào bảng `lich_su_don_hang` và hoàn trả kho nếu hủy đơn từ phía admin.
+- **5. Quản Lý & Duyệt Đánh Giá (`danh_gia`):**
+  - Danh sách đánh giá chờ duyệt (`cho_duyet`).
+  - Nút duyệt hiển thị (`hien_thi`) hoặc ẩn vi phạm (`an`).
+- **6. Quản Lý Mã Giảm Giá & Người Dùng:**
+  - Thêm, sửa, xóa, vô hiệu hóa mã giảm giá (`ma_giam_gia`).
+  - Quản lý danh sách người dùng (`nguoi_dung`): Phân quyền (`admin`/`khach_hang`), khóa hoặc mở khóa tài khoản (`hoat_dong`/`khoa`).
 
 ---
 
-## 5. CÁC BƯỚC TIẾP THEO THEO THỨ TỰ ƯU TIÊN
-
-1. **Bước 1 (Ưu tiên cao nhất - Mở đầu Giai đoạn 3):** Xây dựng `Models/Coupon.php` và `Controllers/CartController.php` (các hành động `index`, `add`, `update`, `remove`, `clear`, `applyCoupon`).
-2. **Bước 2:** Chuyển đổi giao diện `gi_h_ng_thanh_to_n_bookstore/code.html` sang `Views/client/cart.php` chuẩn phong cách Athenaeum Modern.
-3. **Bước 3:** Xây dựng `Controllers/CheckoutController.php` và chuyển đổi `thanh_toan_x_c_nh_n_n_h_ng_bookstore/code.html` sang `Views/client/checkout.php`, lập trình Database Transaction tạo đơn hàng an toàn.
-4. **Bước 4:** Xây dựng giao diện tra cứu và theo dõi đơn hàng với Timeline Stepper 4 bước tại `Views/client/account/orders.php` tích hợp vào `AccountController@orders`.
-
----
-
-## 6. HƯỚNG DẪN CÀI ĐẶT, CHẠY & KIỂM THỬ DỰ ÁN
+## 5. HƯỚNG DẪN CÀI ĐẶT, CHẠY & KIỂM THỬ DỰ ÁN
 
 ### 1. Môi trường yêu cầu
 - XAMPP đang chạy dịch vụ **Apache** (cổng 80) và **MySQL** (cổng 3306).
 - Thư mục dự án: `c:\xampp\htdocs\PHP_nang_cao\book_store_online\`.
+- Tên CSDL: `book_store` (đã nạp sẵn `database.sql`).
 
-### 2. CSDL MySQL
-- Tên CSDL: `book_store`.
-- Đã import sẵn tệp `database.sql` gồm 16 bảng và dữ liệu mẫu chuẩn UTF-8.
+### 2. URL kiểm thử các tính năng
+- **Trang chủ:** `http://localhost/PHP_nang_cao/book_store_online/`
+- **Danh mục & Tìm kiếm:** `http://localhost/PHP_nang_cao/book_store_online/tim-kiem`
+- **Chi tiết sách:** `http://localhost/PHP_nang_cao/book_store_online/chi-tiet/1`
+- **Giỏ hàng:** `http://localhost/PHP_nang_cao/book_store_online/gio-hang`
+- **Thanh toán:** `http://localhost/PHP_nang_cao/book_store_online/thanh-toan`
+- **Đơn hàng của tôi:** `http://localhost/PHP_nang_cao/book_store_online/tai-khoan/don-hang`
+- **Chi tiết đơn hàng:** `http://localhost/PHP_nang_cao/book_store_online/tai-khoan/don-hang/chi-tiet/7`
+- **Sổ địa chỉ:** `http://localhost/PHP_nang_cao/book_store_online/tai-khoan/so-dia-chi`
+- **Admin Dashboard:** `http://localhost/PHP_nang_cao/book_store_online/admin`
 
-### 3. URL truy cập kiểm thử
-- Trang chủ: `http://localhost/PHP_nang_cao/book_store_online/`
-- Danh mục & Tìm kiếm sách: `http://localhost/PHP_nang_cao/book_store_online/tim-kiem`
-- Chi tiết tác phẩm mẫu: `http://localhost/PHP_nang_cao/book_store_online/chi-tiet/1`
-- Đăng nhập: `http://localhost/PHP_nang_cao/book_store_online/dang-nhap`
-- Đăng ký: `http://localhost/PHP_nang_cao/book_store_online/dang-ky`
-- Sổ địa chỉ: `http://localhost/PHP_nang_cao/book_store_online/tai-khoan/so-dia-chi`
-- Tổng quan quản trị: `http://localhost/PHP_nang_cao/book_store_online/admin`
-
-### 4. Tài khoản kiểm thử mẫu
+### 3. Tài khoản mẫu
 - **Quản Trị Viên (Admin):** Email: `admin@bookstore.vn` | Mật khẩu: `123456`
-- **Khách Hàng (Độc Giả 1):** Email: `nguyenvanan@gmail.com` | Mật khẩu: `123456`
-- **Khách Hàng (Độc Giả 2):** Email: `tranthibinh@gmail.com` | Mật khẩu: `123456`
-*(Trang đăng nhập có nút 1 chạm để tự động điền sẵn tài khoản mẫu tiện lợi)*
+- **Độc Giả 1:** Email: `nguyenvanan@gmail.com` | Mật khẩu: `123456`
+- **Độc Giả 2:** Email: `tranthibinh@gmail.com` | Mật khẩu: `123456`

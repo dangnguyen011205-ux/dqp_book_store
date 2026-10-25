@@ -52,6 +52,10 @@ class AuthController extends Controller {
             Auth::login($user);
             unset($_SESSION['old']);
 
+            // Gộp giỏ hàng session vào tài khoản CSDL nếu có
+            $cartModel = new \Models\Cart();
+            $cartModel->mergeSessionCart((int)$user['id']);
+
             flash('success', 'Chào mừng ' . htmlspecialchars($user['ho_ten']) . ' đã quay trở lại!');
 
             // Chuyển hướng tới trang trước đó nếu có

@@ -1,7 +1,7 @@
 # DANH SÁCH NHIỆM VỤ DỰ ÁN (PROJECT TASKS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
-> **Cập nhật:** Hoàn thành Giai đoạn 1 & Giai đoạn 2 / Sẵn sàng Giai đoạn 3  
-> **Thời điểm cập nhật:** 24/10/2026  
+> **Cập nhật:** Hoàn thành 100% Giai đoạn 1, 2, 3 / Sẵn sàng triển khai Giai đoạn 4 (Admin Portal)  
+> **Thời điểm cập nhật:** 25/10/2026  
 
 ---
 
@@ -50,40 +50,63 @@
 
 ---
 
-## GIAI ĐOẠN 3: GIỎ HÀNG, ĐẶT HÀNG & THEO DÕI VẬN ĐƠN ĐỘC GIẢ (SẴN SÀNG TRIỂN KHAI)
-- [ ] Xây dựng Model bổ trợ: `Models/Coupon.php`, `Models/Order.php`.
-- [ ] Chuyển đổi Giỏ hàng từ `gi_h_ng_thanh_to_n_bookstore/code.html` sang `Views/client/cart.php`:
-  - [ ] Thêm sách vào giỏ (Form POST / AJAX), kiểm tra không vượt quá `so_luong_ton`.
-  - [ ] Cập nhật số lượng (+ / -) và xóa sản phẩm khỏi giỏ hàng.
-  - [ ] Áp dụng mã giảm giá (`ma_giam_gia`): Kiểm tra thời hạn, đơn tối thiểu, số lượt tối đa.
-- [ ] Chuyển đổi Màn hình Checkout từ `thanh_toan_x_c_nh_n_n_h_ng_bookstore/code.html` sang `Views/client/checkout.php`:
-  - [ ] Chọn địa chỉ giao từ bảng `dia_chi` hoặc nhập địa chỉ mới.
-  - [ ] Chọn phương thức vận chuyển và tính phí giao hàng.
-  - [ ] Chọn phương thức thanh toán (COD hoặc VNPAY/Chuyển khoản).
-  - [ ] Xử lý Đặt hàng bằng Database Transaction (Tạo `don_hang`, `chi_tiet_don_hang`, trừ `so_luong_ton`, tăng `da_dung` của voucher, tạo `thanh_toan`, ghi log `lich_su_don_hang`, xóa giỏ hàng).
-  - [ ] Màn hình xác nhận đặt hàng thành công (`Views/client/checkout_success.php`).
-- [ ] Chuyển đổi Quản lý đơn hàng độc giả từ `qu_n_l_n_h_ng_bookstore/code.html` & `qu_n_l_theo_d_i_n_h_ng_bookstore/code.html` sang `Views/client/orders.php`:
-  - [ ] Danh sách đơn hàng phân theo tabs trạng thái (`cho_xac_nhan`, `da_xac_nhan`, `dang_giao`, `hoan_thanh`, `da_huy`).
-  - [ ] Timeline Stepper lộ trình vận chuyển 4 bước từ bảng `lich_su_don_hang`.
-  - [ ] Hủy đơn hàng khi còn ở trạng thái `cho_xac_nhan` (hoàn tồn kho, hoàn lượt voucher, ghi log hủy).
+## GIAI ĐOẠN 3: GIỎ HÀNG, ĐẶT HÀNG & THEO DÕI VẬN ĐƠN ĐỘC GIẢ (HOÀN THÀNH 100%)
+- [x] Xây dựng Model bổ trợ: `Models/Coupon.php`, `Models/Order.php`, mở rộng `Models/Cart.php`.
+- [x] Chuyển đổi Giỏ hàng từ `gi_h_ng_thanh_to_n_bookstore/code.html` sang `Views/client/cart.php`:
+  - [x] Thêm sách vào giỏ (Form POST / AJAX), kiểm tra không vượt quá `so_luong_ton`.
+  - [x] Cập nhật số lượng (+ / -) và xóa từng sản phẩm hoặc xóa sạch giỏ hàng.
+  - [x] Tự động gộp giỏ hàng session vào tài khoản CSDL khi đăng nhập (`Cart::mergeSessionCart()`).
+  - [x] Áp dụng mã giảm giá (`ma_giam_gia`): Kiểm tra thời hạn, đơn tối thiểu, số lượt tối đa, tính số tiền giảm theo % hoặc tiền mặt.
+  - [x] Danh sách mã voucher có sẵn kèm nút "Dùng ngay" và nút "Gỡ bỏ".
+- [x] Chuyển đổi Màn hình Checkout từ `thanh_to_n_x_c_nh_n_n_h_ng_bookstore/code.html` sang `Views/client/checkout.php`:
+  - [x] Chọn địa chỉ giao từ sổ địa chỉ `dia_chi` (kèm badge Mặc định) hoặc nhập địa chỉ mới (tùy chọn lưu vào sổ).
+  - [x] Chọn phương thức vận chuyển: Giao tiêu chuẩn (miễn phí từ 250k) hoặc Hỏa tốc NowShip 2h (40k).
+  - [x] Chọn phương thức thanh toán: COD hoặc VNPAY.
+  - [x] Xử lý Đặt hàng bằng Database Transaction an toàn (`Order::createOrder`):
+    - Khóa dòng kiểm tra tồn kho `SELECT ... FOR UPDATE`.
+    - Trừ số lượng tồn kho `sach.so_luong_ton`.
+    - Tạo `don_hang` trạng thái `cho_xac_nhan`.
+    - Lưu từng món vào `chi_tiet_don_hang`.
+    - Tăng `da_dung` của mã giảm giá.
+    - Tạo bản ghi thanh toán trong `thanh_toan`.
+    - Ghi log khởi tạo vào `lich_su_don_hang`.
+    - Xóa sạch giỏ hàng qua `Cart::clearCart()`.
+  - [x] Màn hình xác nhận đặt hàng thành công (`Views/client/checkout_success.php`): Mã đơn hàng `#BK-...`, bento grid chi tiết, nút theo dõi đơn hàng.
+- [x] Chuyển đổi Quản lý đơn hàng độc giả từ `qu_n_l_n_h_ng_bookstore/code.html` sang `Views/client/account/orders.php`:
+  - [x] Danh sách đơn hàng phân theo Tabs trạng thái (`tat_ca`, `cho_xac_nhan`, `da_xac_nhan`, `dang_giao`, `hoan_thanh`, `da_huy`) kèm số lượng đếm trên từng tab.
+  - [x] Thẻ tóm tắt đơn hàng: Mã đơn, ngày đặt, trạng thái badge, ảnh đại diện các cuốn sách, tổng thanh toán, nút Xem chi tiết / Theo dõi vận đơn.
+- [x] Chuyển đổi Theo dõi chi tiết đơn hàng từ `qu_n_l_theo_d_i_n_h_ng_bookstore/code.html` sang `Views/client/account/order_detail.php`:
+  - [x] **Timeline Stepper 4 bước** trực quan theo Design System Athenaeum Modern (*Đã Đặt Đơn* -> *Xác Nhận & Đóng Gói* -> *Đang Vận Chuyển* -> *Giao Thành Công*).
+  - [x] Lịch sử hành trình vận đơn chi tiết lấy từ bảng `lich_su_don_hang` kèm mốc thời gian thực tế.
+  - [x] Bảng tổng kết chi phí: Tạm tính, Phí vận chuyển, Giảm giá voucher, Tổng thanh toán.
+  - [x] Hủy đơn hàng an toàn khi đơn ở trạng thái `cho_xac_nhan` bằng Database Transaction:
+    - Khóa bản ghi kiểm tra.
+    - Hoàn trả lại số lượng tồn kho `sach.so_luong_ton`.
+    - Giảm số lượt dùng voucher `ma_giam_gia.da_dung`.
+    - Đổi trạng thái sang `da_huy`.
+    - Ghi log hủy kèm lý do vào `lich_su_don_hang`.
+- [x] Viết và thực thi kiểm thử tích hợp tự động `scratch/test_stage3.php` đạt `100% Passed` (14/14 test cases).
+- [x] Kiểm thử toàn diện trình duyệt bằng Browser Subagent: Đăng nhập -> Thêm giỏ -> Áp voucher `WELCOME2026` -> Checkout COD -> Đặt hàng #7 -> Xem danh sách đơn -> Chi tiết đơn hàng với Timeline Stepper -> Hủy đơn và xác nhận badge `ĐÃ HỦY`.
 
 ---
 
-## GIAI ĐOẠN 4: TOÀN BỘ PHÂN HỆ QUẢN TRỊ (ADMIN PORTAL)
+## GIAI ĐOẠN 4: TOÀN BỘ PHÂN HỆ QUẢN TRỊ (ADMIN PORTAL - SẴN SÀNG TRIỂN KHAI)
 - [ ] Hoàn thiện Dashboard Quản trị từ `t_ng_quan_qu_n_tr_bookstore_admin_1` & `t_ng_quan_qu_n_tr_bookstore_admin_2`:
-  - [ ] 4 Bento KPI Cards phân tích doanh thu thực tế từ các đơn `hoan_thanh`.
-  - [ ] Biểu đồ Doanh thu thời gian (SVG chart) & Biểu đồ phân bổ thể loại.
-  - [ ] Bảng đơn hàng mới cần duyệt gấp & Top 5 sách bán chạy nhất.
-  - [ ] Widget cảnh báo tồn kho thấp (< 10 cuốn).
+  - [ ] 4 Bento KPI Cards phân tích doanh thu thực tế từ các đơn `hoan_thanh`, tổng đơn hàng, tổng đầu sách, độc giả đăng ký.
+  - [ ] Biểu đồ Doanh thu thời gian (SVG interactive chart) & Biểu đồ phân bổ cơ cấu thể loại.
+  - [ ] Bảng đơn hàng mới cần duyệt gấp & Top sách bán chạy nhất.
+  - [ ] Widget cảnh báo tồn kho thấp (sách tồn kho <= 5 cuốn).
 - [ ] Quản lý Sách & Quản lý Kho từ `qu_n_l_s_ch_qu_n_l_kho_bookstore_admin/code.html`:
-  - [ ] CRUD Sách (upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`, Modal `#modal-add-book`).
-  - [ ] Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Nhập, Xuất, Điều chỉnh) bằng Transaction.
+  - [ ] Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái.
+  - [ ] Modal thêm sách `#modal-add-book` (upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`).
+  - [ ] Sửa thông tin sách, cập nhật giá và trạng thái kinh doanh.
+  - [ ] Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập, Xuất, Điều chỉnh kiểm kê) bằng Transaction.
 - [ ] Quản lý Đơn hàng từ `qu_n_l_n_h_ng_bookstore_admin/code.html`:
-  - [ ] Lọc đơn theo mã, khách hàng, ngày đặt, tabs trạng thái.
-  - [ ] Cập nhật trạng thái đơn hàng & thanh toán, tự động ghi log vào `lich_su_don_hang` (hoàn tồn kho nếu hủy).
+  - [ ] Lọc đơn theo mã, tên khách hàng, khoảng ngày đặt, tabs trạng thái.
+  - [ ] Cập nhật trạng thái đơn hàng & thanh toán, tự động ghi log vào `lich_su_don_hang` (hoàn tồn kho nếu hủy từ admin).
 - [ ] CRUD Danh mục Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`).
-- [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Cấu hình phần trăm / tiền mặt, thời gian, giới hạn lượt dùng.
-- [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách, lọc theo vai trò/trạng thái, phân quyền, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).
+- [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Thêm mã mới, cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng, vô hiệu hóa.
+- [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).
 - [ ] Quản lý & Duyệt Đánh giá từ `duy_t_nh_gi_kh_ch_h_ng_bookstore_admin/code.html`:
-  - [ ] 4 thẻ chỉ số đánh giá, lọc theo số sao / trạng thái / tựa sách.
-  - [ ] Duyệt hiển thị (`hien_thi`) hoặc Ẩn đánh giá (`an`).
+  - [ ] 4 thẻ chỉ số đánh giá, lọc theo số sao / trạng thái (`cho_duyet`, `hien_thi`, `an`) / tựa sách.
+  - [ ] Duyệt hiển thị (`hien_thi`) hoặc Ẩn vi phạm (`an`).

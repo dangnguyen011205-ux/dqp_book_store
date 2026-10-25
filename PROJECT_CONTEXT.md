@@ -2,8 +2,8 @@
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Kiến trúc:** PHP 8.x Thuần (OOP, MVC Pattern, PDO Prepared Statements)  
 > **Design System:** Athenaeum Modern (Thư Viện Tinh Hoa Cổ Điển Hiện Đại v2.4)  
-> **Phiên bản cập nhật:** 2.0.0 (Hoàn thành Giai đoạn 2 - Khám Phá Sách, Tìm Kiếm & Đánh Giá)  
-> **Ngày cập nhật:** 24/10/2026  
+> **Phiên bản cập nhật:** 3.0.0 (Hoàn thành Giai đoạn 3 - Giỏ hàng, Mã giảm giá, Đặt hàng & Quản lý đơn hàng độc giả)  
+> **Ngày cập nhật:** 25/10/2026  
 
 ---
 
@@ -13,7 +13,8 @@ Xây dựng trọn vẹn hệ thống thương mại điện tử chuyên ngành
    - Khám phá sách theo phong cách thư viện tinh hoa: Hero Mosaic Banner, Flash Deals có progress bar tồn kho, Bestseller Tabs lọc theo thể loại, Tác giả tiêu biểu, Bộ sưu tập tuyển chọn.
    - Tìm kiếm & Lọc đa tiêu chí: Tương thích đồng thời từ khóa `q`, thể loại `the_loai`, tác giả `tac_gia`, NXB `nxb`, khoảng giá Min-Max / Presets, số sao đánh giá `so_sao`, tình trạng còn hàng `con_hang`, sắp xếp và phân trang URL động.
    - Chi tiết tác phẩm: Thông số kỹ thuật, đồng tác giả, sách liên quan cùng thể loại, phân bổ rating 1-5 sao và danh sách nhận xét kiểm duyệt.
-   - Giỏ hàng tương tác, áp dụng mã voucher, checkout transaction và tra cứu tiến độ đơn hàng qua Timeline Stepper 4 bước.
+   - Giỏ hàng & Thanh toán: Quản lý giỏ hàng linh hoạt (Session cho khách vãng lai và CSDL cho thành viên, tự động gộp khi đăng nhập), kiểm tra tồn kho tức thì, áp dụng voucher với các điều kiện ràng buộc khắt khe, hỗ trợ chọn địa chỉ nhận hàng từ sổ địa chỉ hoặc thêm mới trực tiếp.
+   - Quản lý đơn hàng & Hành trình vận đơn: Bộ lọc Tabs trạng thái kèm số lượng đếm, Timeline Stepper 4 bước hiển thị lộ trình trực quan (`lich_su_don_hang`), hủy đơn an toàn với Database Transaction và hoàn trả tồn kho.
 2. **Phân hệ Quản trị (Admin Portal):** Dashboard Bento KPI cards phân tích doanh thu và tồn kho, CRUD danh mục/sách/tác giả/NXB, quản lý nhập-xuất-điều chỉnh kho bằng phiếu kho, xử lý vòng đời đơn hàng, duyệt đánh giá độc giả, quản lý voucher và phân quyền/khóa người dùng.
 3. **Tiêu chuẩn Kỹ thuật:** Không sử dụng framework nặng (Laravel/Symfony), viết bằng PHP thuần hướng đối tượng (OOP MVC), bảo mật chặt chẽ bằng PDO Prepared Statements, Session an toàn, Bcrypt password hashing, kiểm soát trạng thái tài khoản thời gian thực.
 
@@ -27,7 +28,7 @@ Xây dựng trọn vẹn hệ thống thương mại điện tử chuyên ngành
   - Tailwind CSS (mở rộng Design Tokens của phong cách Athenaeum Modern).
   - Phông chữ chính: Google Fonts `Plus Jakarta Sans` (weights 400, 500, 600, 700).
   - Bộ Icon hệ thống: Google `Material Symbols Outlined`.
-  - Vanilla JavaScript cho các tương tác DOM, Toast notifications, Modal popups, Countdown timer.
+  - Vanilla JavaScript cho các tương tác DOM, Toast notifications, Modal popups, Countdown timer, Stepper animations.
 
 ---
 
@@ -44,11 +45,11 @@ Thiết kế mang vẻ đẹp tri thức, học thuật, tôn vinh văn hóa đ�
   - `surface-container-lowest` (`#FFFFFF`): Nền thẻ sách, giỏ hàng, modal popup, card.
   - `surface-container-low` (`#F2F4F6`): Nền sidebar, input search.
 - **Semantic Status Badges (Khớp 100% CSDL):**
-  - `cho_xac_nhan` / `cho_duyet`: Nền `#FEF3C7` (Amber-100), Chữ `#B45309`, Icon `pending_actions`.
+  - `cho_xac_nhan` / `cho_duyet` / `cho_thanh_toan`: Nền `#FEF3C7` (Amber-100), Chữ `#B45309`, Icon `pending_actions`.
   - `da_xac_nhan`: Nền `#E2E8F0` (Slate-200), Chữ `#334155`, Icon `inventory`.
   - `dang_giao`: Nền `#E0F2FE` (Sky-100), Chữ `#0369A1`, Icon `local_shipping`.
-  - `hoan_thanh` / `hien_thi`: Nền `#D1FAE5` (Emerald-100), Chữ `#047857`, Icon `verified` / `check_circle`.
-  - `da_huy` / `an`: Nền `#FFDAD6` (Rose-100), Chữ `#BA1A1A`, Icon `cancel` / `warning`.
+  - `hoan_thanh` / `hien_thi` / `thanh_cong`: Nền `#D1FAE5` (Emerald-100), Chữ `#047857`, Icon `verified` / `check_circle`.
+  - `da_huy` / `an` / `that_bai`: Nền `#FFDAD6` (Rose-100), Chữ `#BA1A1A`, Icon `cancel` / `warning`.
 
 ---
 
@@ -76,38 +77,47 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │   └── Helper.php                # Các hàm trợ giúp toàn cục: base_url, asset, flash, status_badge...
 │
 ├── Controllers/
-│   ├── AuthController.php        # Đăng nhập, đăng ký, đăng xuất, tự động gán giỏ hàng
-│   ├── AccountController.php     # Hồ sơ cá nhân, đổi mật khẩu, CRUD sổ địa chỉ
+│   ├── AuthController.php        # Đăng nhập, đăng ký, đăng xuất, tự động gán & gộp giỏ hàng session
+│   ├── AccountController.php     # Hồ sơ cá nhân, đổi mật khẩu, CRUD sổ địa chỉ, đơn hàng & hủy đơn
 │   ├── HomeController.php        # Trang chủ: nạp Flash Deals, Bestsellers, Tác giả, Reviews
 │   ├── BookController.php        # Danh mục, bộ lọc tìm kiếm đa tiêu chí, chi tiết sách, gửi đánh giá
+│   ├── CartController.php        # Quản lý giỏ hàng, cập nhật số lượng, áp dụng / gỡ mã giảm giá
+│   ├── CheckoutController.php    # Thanh toán, chọn/thêm địa chỉ, phí ship, xác nhận đơn hàng
 │   └── AdminDashboardController.php # Bảng điều khiển quản trị tổng quan
 │
 ├── Models/
 │   ├── User.php                  # Tương tác bảng nguoi_dung
 │   ├── Address.php               # Tương tác bảng dia_chi (quản lý địa chỉ mặc định bằng Transaction)
 │   ├── Category.php              # Tương tác bảng the_loai (danh mục sách, đếm đầu sách)
-│   ├── Book.php                  # Tương tác bảng sach, sach_tac_gia, chi_tiet_don_hang (bộ lọc, flash deals, chi tiết)
+│   ├── Book.php                  # Tương tác bảng sach, sach_tac_gia, chi_tiet_don_hang
 │   ├── Author.php                # Tương tác bảng tac_gia
 │   ├── Publisher.php             # Tương tác bảng nha_xuat_ban
 │   ├── Review.php                # Tương tác bảng danh_gia (rating summary, kiểm duyệt, kiểm tra quyền mua)
-│   └── Cart.php                  # Tương tác bảng gio_hang & chi_tiet_gio_hang
+│   ├── Cart.php                  # Tương tác bảng gio_hang & chi_tiet_gio_hang, session cart, merge cart
+│   ├── Coupon.php                # Tương tác bảng ma_giam_gia (xác thực thời hạn, đơn tối thiểu, số lượt)
+│   └── Order.php                 # Tương tác bảng don_hang, chi_tiet_don_hang, thanh_toan, lich_su_don_hang
 │
 ├── Views/
 │   ├── layout/
-│   │   ├── main.php              # Layout Khách hàng: Header 3 tầng, Mega Menu, Toast, Footer 5 cột
+│   │   ├── main.php              # Layout Khách hàng: Header 3 tầng, Mega Menu, Cart badge, Toast, Footer
 │   │   └── admin.php             # Layout Quản trị: Sidebar cố định, Topbar tìm kiếm, profile chip
 │   ├── client/
 │   │   ├── 404.php               # Giao diện trang 404 không tìm thấy
 │   │   ├── home.php              # Giao diện trang chủ (Hero Mosaic, Countdown, Flash deals, Bestsellers)
 │   │   ├── catalog.php           # Giao diện tìm kiếm, bộ lọc đa tiêu chí, phân trang
 │   │   ├── detail.php            # Giao diện chi tiết sách, 3 tabs, thống kê rating & form nhận xét
+│   │   ├── cart.php              # Giao diện giỏ hàng (bộ đếm số lượng, nhập voucher, tóm tắt chi phí)
+│   │   ├── checkout.php          # Giao diện thanh toán (sổ địa chỉ, chọn vận chuyển tiêu chuẩn / hỏa tốc)
+│   │   ├── checkout_success.php  # Màn hình xác nhận đặt hàng thành công (mã đơn #BK-..., bento grid)
 │   │   ├── auth/
 │   │   │   ├── login.php         # Giao diện đăng nhập (có nút 1 chạm điền demo admin / khách)
 │   │   │   └── register.php      # Giao diện đăng ký thành viên
 │   │   └── account/
-│   │       ├── _sidebar.php      # Component Sidebar độc giả (cấp hội viên, tiến độ đọc)
+│   │       ├── _sidebar.php      # Component Sidebar độc giả (cấp hội viên, menu tài khoản)
 │   │       ├── profile.php       # Quản lý hồ sơ độc giả & đổi mật khẩu
-│   │       └── addresses.php     # Sổ địa chỉ giao nhận kèm modal thêm/sửa
+│   │       ├── addresses.php     # Sổ địa chỉ giao nhận kèm modal thêm/sửa
+│   │       ├── orders.php        # Quản lý đơn hàng (Tabs trạng thái, đếm số lượng, danh sách thẻ đơn)
+│   │       └── order_detail.php  # Chi tiết đơn hàng (Timeline Stepper 4 bước, hành trình vận đơn, hủy đơn)
 │   └── admin/
 │       └── dashboard.php         # Trang tổng quan quản trị (4 Bento KPI cards)
 │
@@ -135,16 +145,45 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
    - Mỗi người dùng chỉ được có tối đa 1 địa chỉ mặc định (`mac_dinh = 1`). Khi thêm mới hoặc sửa một địa chỉ thành mặc định, `Address::create()` và `Address::update()` luôn sử dụng `beginTransaction()` để reset các địa chỉ khác về `0`. Nếu xóa đúng địa chỉ mặc định, hệ thống tự động gán địa chỉ còn lại gần nhất thành mặc định.
 4. **Quy tắc Kiểm Soát Trạng Thái Tài Khoản:**
    - Mọi request của người dùng đã đăng nhập đều được `Auth::check()` xác thực lại trực tiếp với CSDL qua `Auth::verifyAccountStatus()`. Nếu người quản trị khóa tài khoản (`trang_thai = 'khoa'`), người dùng bị lập tức đăng xuất và chuyển hướng về màn hình đăng nhập.
-5. **Quy tắc Tìm Kiếm & Lọc Đa Tiêu Chí:**
-   - Cho phép kết hợp không giới hạn các tiêu chí: Từ khóa `q` (tìm trên tiêu đề sách, tên tác giả, tóm tắt nội dung), Thể loại `the_loai`, Tác giả `tac_gia`, Nhà xuất bản `nxb`, Khoảng giá `gia_min`/`gia_max`, Đánh giá sao `so_sao`, và Tình trạng còn hàng `con_hang` (`so_luong_ton > 0`).
-   - Câu truy vấn đếm tổng số bản ghi phân trang trong `Book::filterBooks()` được tối ưu bằng subquery `HAVING` khi có lọc số sao, đảm bảo số trang và thanh phân trang đồng bộ chính xác.
-6. **Quy tắc Kiểm Duyệt Đánh Giá:**
-   - Khách hàng chỉ được gửi đánh giá cho cuốn sách khi thỏa mãn:
-     1. Đã đăng nhập tài khoản.
-     2. Đã mua cuốn sách đó trong một đơn hàng có trạng thái `hoan_thanh` (`Review::hasUserPurchased`).
-     3. Chưa từng đánh giá cuốn sách này trước đó (`Review::hasUserReviewed`, ràng buộc duy nhất `uk_danh_gia_user_sach`).
-   - Đánh giá mới tạo luôn mang trạng thái `cho_duyet`, chỉ được hiển thị công khai ngoài trang chi tiết khi quản trị viên duyệt sang `hien_thi`.
-7. **Quy tắc Fallback Ảnh Bìa Chuẩn Tỷ Lệ 2:3:**
-   - Hàm tiện ích `getBookCover()` kiểm tra tệp tin thực tế trong `Public/uploads/books/`. Nếu chưa có tệp ảnh vật lý, hệ thống tự động fallback sang ảnh chuẩn của các tác phẩm mẫu trong CSDL để đảm bảo giao diện luôn hiển thị trực quan và tinh tế theo chuẩn Athenaeum Modern.
-8. **Quy tắc Giao Tác Đơn Hàng & Kho:**
-   - Bắt buộc dùng Database Transaction khi tạo đơn hàng (trừ tồn kho, tăng số lượt dùng voucher, ghi log lịch sử đơn hàng) và khi hủy đơn (hoàn lại tồn kho, hoàn lượt voucher, ghi log lịch sử).
+5. **Quy tắc Giỏ Hàng & Tự Động Gộp Khi Đăng Nhập:**
+   - Khách vãng lai: Lưu giỏ hàng tạm thời trong `$_SESSION['cart']`.
+   - Thành viên đã đăng nhập: Lưu trực tiếp trong CSDL tại 2 bảng `gio_hang` và `chi_tiet_gio_hang`.
+   - Khi người dùng đăng nhập thành công (`AuthController::login()`), phương thức `Cart::mergeSessionCart()` sẽ tự động chuyển toàn bộ sách từ Session vào CSDL của tài khoản (cộng dồn số lượng nếu đã có, kiểm tra không vượt quá tồn kho), sau đó dọn dẹp sạch `$_SESSION['cart']`.
+6. **Quy tắc Mã Giảm Giá (Coupon Validation):**
+   - Phương thức `Coupon::validateCoupon($code, $subtotal)` kiểm tra đầy đủ 4 điều kiện:
+     1. Mã có tồn tại trong bảng `ma_giam_gia` không.
+     2. Thời gian hiện tại nằm trong khoảng `bat_dau` <= NOW() <= `ket_thuc`.
+     3. Số lượt sử dụng đã đạt giới hạn `da_dung >= so_luot_toi_da` hay chưa.
+     4. Giá trị đơn hàng tối thiểu `don_toi_thieu` có được thỏa mãn không.
+   - Hỗ trợ 2 hình thức: `phan_tram` (tính theo % giá trị giỏ hàng) và `tien_mat` (trừ trực tiếp số tiền cố định).
+7. **Quy tắc Phí Vận Chuyển:**
+   - Đơn hàng tiêu chuẩn có giá trị từ 250.000đ trở lên được miễn phí vận chuyển (0đ). Đơn dưới 250.000đ có phí 22.000đ - 25.000đ.
+   - Tùy chọn giao hỏa tốc NowShip 2h áp dụng mức phí cố định 40.000đ.
+8. **Quy tắc Giao Tác Đơn Hàng An Toàn Tuyệt Đối (Database Transaction):**
+   - Khi tạo đơn hàng (`Order::createOrder`):
+     1. Bắt đầu giao tác `beginTransaction()`.
+     2. Khóa dòng kiểm tra tồn kho bằng `SELECT ... FOR UPDATE` cho từng đầu sách trong giỏ. Nếu tồn kho không đủ hoặc sách đã ngừng bán, lập tức `rollBack()` và báo lỗi.
+     3. Trừ số lượng tồn kho `UPDATE sach SET so_luong_ton = so_luong_ton - ?`.
+     4. Tạo đơn hàng trong bảng `don_hang` với trạng thái `cho_xac_nhan`.
+     5. Lưu từng mặt hàng vào `chi_tiet_don_hang`.
+     6. Nếu có mã giảm giá, tăng số lượt dùng `UPDATE ma_giam_gia SET da_dung = da_dung + 1`.
+     7. Tạo bản ghi giao dịch trong bảng `thanh_toan` (COD: `cho_thanh_toan`, VNPAY: `thanh_cong` kèm mã giao dịch).
+     8. Ghi log khởi tạo vào `lich_su_don_hang` ("Đã đặt đơn hàng thành công qua hệ thống trực tuyến").
+     9. Xóa giỏ hàng của người dùng qua `Cart::clearCart()`.
+     10. `commit()` giao tác an toàn.
+9. **Quy tắc Hủy Đơn Hàng & Hoàn Trả Tồn Kho (Order Cancellation):**
+   - Độc giả chỉ được phép hủy đơn hàng khi đơn còn ở trạng thái `cho_xac_nhan`.
+   - Toàn bộ quá trình hủy được bọc trong `beginTransaction()`:
+     1. Khóa dòng đơn hàng bằng `SELECT ... FOR UPDATE`.
+     2. Duyệt qua danh sách `chi_tiet_don_hang`, hoàn trả lại số lượng sách vào kho `UPDATE sach SET so_luong_ton = so_luong_ton + ?`.
+     3. Nếu đơn có dùng voucher, giảm số lượt sử dụng `UPDATE ma_giam_gia SET da_dung = GREATEST(0, da_dung - 1)`.
+     4. Cập nhật trạng thái đơn thành `da_huy`.
+     5. Ghi log hủy kèm lý do của khách hàng vào bảng `lich_su_don_hang`.
+     6. `commit()` giao tác an toàn.
+10. **Quy tắc Timeline Stepper 4 Bước Theo Dõi Đơn Hàng:**
+    - Giao diện chi tiết đơn hàng trực quan hóa trạng thái thành 4 bước:
+      - Bước 1: *Đã Đặt Đơn*
+      - Bước 2: *Xác Nhận & Đóng Gói*
+      - Bước 3: *Đang Vận Chuyển*
+      - Bước 4: *Giao Thành Công*
+    - Hiển thị dòng thời gian thực tế ghi nhận từ bảng `lich_su_don_hang` kèm icon trực quan theo Design System Athenaeum Modern. Nếu đơn bị hủy, hiển thị banner cảnh báo và badge `ĐÃ HỦY` (Rose-100 / Red-600).
