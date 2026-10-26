@@ -104,11 +104,12 @@
   - [x] Widget cảnh báo tồn kho thấp (sách tồn kho <= 30 cuốn).
   - [x] Widget duyệt đánh giá khách hàng mới nhất.
   - [x] Bổ sung helper toàn cục `get_book_cover()` trong `Core/Helper.php`.
-- [ ] Quản lý Sách & Quản lý Kho từ `qu_n_l_s_ch_qu_n_l_kho_bookstore_admin/code.html`:
-  - [ ] Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái.
-  - [ ] Modal thêm sách `#modal-add-book` (upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`).
-  - [ ] Sửa thông tin sách, cập nhật giá và trạng thái kinh doanh.
-  - [ ] Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập, Xuất, Điều chỉnh kiểm kê) bằng Transaction.
+- [x] Quản lý Sách & Quản lý Kho từ `qu_n_l_s_ch_qu_n_l_kho_bookstore_admin/code.html`:
+  - [x] Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái, phân trang, hiển thị thẻ cảnh báo tồn kho thấp.
+  - [x] Modal thêm sách `#modal-add-book` (upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`, tự động lập phiếu nhập kho đầu kỳ).
+  - [x] Modal sửa thông tin sách `#modal-edit-book` nạp dữ liệu động qua AJAX JSON, cập nhật giá, tác giả, mô tả và trạng thái kinh doanh.
+  - [x] Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập, Xuất, Điều chỉnh kiểm kê) bằng Database Transaction an toàn với khóa dòng `SELECT ... FOR UPDATE`.
+  - [x] Chuyển đổi mượt 2 tabs: Danh sách Sách & Tồn kho vs Lịch sử Phiếu kho Luân chuyển.
 - [ ] Quản lý Đơn hàng từ `qu_n_l_n_h_ng_bookstore_admin/code.html`:
   - [ ] Lọc đơn theo mã, tên khách hàng, khoảng ngày đặt, tabs trạng thái.
   - [ ] Cập nhật trạng thái đơn hàng & thanh toán, tự động ghi log vào `lich_su_don_hang` (hoàn tồn kho nếu hủy từ admin).
