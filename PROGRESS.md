@@ -63,8 +63,15 @@
 
 ---
 
+### Giai đoạn 4: Toàn Bộ Phân Hệ Quản Trị (Admin Portal - Đang Triển Khai)
+
+| Hạng mục | Tệp tin thực tế | Trạng thái | Bằng chứng kiểm thử |
+|:---|:---|:---:|:---|
+| **Bảng Điều Khiển Quản Trị (Interactive Dashboard)** | `Controllers/AdminDashboardController.php`, `Views/admin/dashboard.php` | Hoàn thành | - 4 Bento KPI Cards phân tích số liệu thực (Doanh thu thực đơn `hoan_thanh`, Tổng đơn hàng kèm sub-badge chờ duyệt, Sách đã bán, Tồn kho hệ thống).<br>- Biểu đồ Doanh Thu SVG Area & Column Chart với hiệu ứng Glow, các cột volume, mốc đỉnh cao hôm nay.<br>- Biểu đồ Phân Bổ Thể Loại SVG Donut Chart tính toán tỷ trọng chính xác từ CSDL.<br>- Bảng Đơn Hàng Mới Cần Xử Lý (5 đơn mới nhất kèm nút duyệt/xử lý nhanh).<br>- Top 5 Tựa Sách Bán Chạy Nhất (kèm ảnh bìa, tác giả, thể loại, doanh thu, tồn kho).<br>- Widget Duyệt Đánh Giá Khách Hàng (5 sao vàng, trích dẫn phản hồi) & Cảnh Báo Tồn Kho Thấp.<br>- Kiểm thử tự động `test_admin.php` và xác minh thực tế qua Browser Subagent. |
+
+---
+
 ## 2. NHỮNG VIỆC ĐÃ TRIỂN KHAI NHƯNG CẦN KIỂM THỬ MỞ RỘNG
-- **Admin Dashboard Layout (`Views/admin/dashboard.php`):** Khung tổng quan và 4 Bento KPI cards đã nạp số liệu thực từ CSDL. Sẽ hoàn thiện biểu đồ doanh thu SVG, biểu đồ phân bổ thể loại, và danh sách đơn hàng cần xử lý trong Giai đoạn 4.
 - **Thanh toán VNPAY Online Sandbox:** Đã sẵn sàng bản ghi và mã giao dịch giả lập, sẵn sàng cấu hình URL Sandbox VNPAY khi đưa vào production.
 
 ---
@@ -86,18 +93,20 @@
 6. **Cảnh báo tĩnh từ Extension IDE (DevSense / Intelephense):**
    - *Khắc phục:* Thêm cấu hình `.vscode/settings.json` để ẩn các cảnh báo giả về biến template được trích xuất qua `extract($data)` trong mô hình PHP MVC thuần.
    - *Cam kết:* Tuân thủ nghiêm ngặt chỉ dẫn của người dùng: Giữ nguyên tệp `order_detail.php` không sửa đổi.
+7. **Đồng bộ hiển thị ảnh bìa toàn hệ thống (`get_book_cover`):**
+   - *Khắc phục:* Bổ sung helper toàn cục `get_book_cover(?string $anhBia)` trong `Core/Helper.php`, tự động ưu tiên ảnh upload cục bộ `Public/uploads/books/`, URL trực tiếp, hoặc fallback ảnh bìa chất lượng cao chuẩn Athenaeum.
 
 ---
 
 ## 4. NHỮNG VIỆC CHƯA HOÀN THÀNH (GIAI ĐOẠN 4 - ADMIN PORTAL)
 
 ### Giai đoạn 4: Toàn Bộ Phân Hệ Quản Trị (Admin Portal)
-- **1. Admin Dashboard Tương Tác:**
-  - Hoàn thiện 4 Bento KPI cards (Doanh thu thực, Đơn hàng mới, Tổng đầu sách, Độc giả đăng ký).
-  - Biểu đồ doanh thu SVG (doanh thu theo tháng/tuần).
-  - Bảng cảnh báo tồn kho (sách có `so_luong_ton <= 5`).
-  - Danh sách đơn hàng mới cần xử lý (`cho_xac_nhan`).
-- **2. Quản Lý Sách & Danh Mục (CRUD Sách, Thể loại, Tác giả, NXB):**
+- **1. Quản Lý Sách & Quản Lý Kho (CRUD Sách, Kho vận & Lập phiếu kho):**
+  - Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái kinh doanh.
+  - Modal thêm sách `#modal-add-book` (upload ảnh bìa `Public/uploads/books/`, gán nhiều tác giả qua bảng `sach_tac_gia`).
+  - Sửa thông tin sách, cập nhật giá và bật/tắt trạng thái kinh doanh (`dang_ban = 1/0`).
+  - Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập `nhap`, Phiếu Xuất `xuat`, Điều chỉnh kiểm kê `dieu_chinh`) bằng Database Transaction tự động cập nhật `so_luong_ton`.
+- **2. Quản Lý Đơn Hàng Admin:**
   - Danh sách sách với bộ lọc quản trị, tìm kiếm theo từ khóa/danh mục.
   - Modal thêm sách `#modal-add-book` (nhập thông tin, tải ảnh bìa lên `Public/uploads/books/`, gán nhiều tác giả qua bảng `sach_tac_gia`).
   - Sửa thông tin sách và chuyển đổi trạng thái đang bán (`dang_ban = 1/0`).

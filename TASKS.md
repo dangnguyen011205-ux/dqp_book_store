@@ -96,12 +96,14 @@
 
 ---
 
-## GIAI ĐOẠN 4: TOÀN BỘ PHÂN HỆ QUẢN TRỊ (ADMIN PORTAL - SẴN SÀNG TRIỂN KHAI)
-- [ ] Hoàn thiện Dashboard Quản trị từ `t_ng_quan_qu_n_tr_bookstore_admin_1` & `t_ng_quan_qu_n_tr_bookstore_admin_2`:
-  - [ ] 4 Bento KPI Cards phân tích doanh thu thực tế từ các đơn `hoan_thanh`, tổng đơn hàng, tổng đầu sách, độc giả đăng ký.
-  - [ ] Biểu đồ Doanh thu thời gian (SVG interactive chart) & Biểu đồ phân bổ cơ cấu thể loại.
-  - [ ] Bảng đơn hàng mới cần duyệt gấp & Top sách bán chạy nhất.
-  - [ ] Widget cảnh báo tồn kho thấp (sách tồn kho <= 5 cuốn).
+## GIAI ĐOẠN 4: TOÀN BỘ PHÂN HỆ QUẢN TRỊ (ADMIN PORTAL)
+- [x] Hoàn thiện Dashboard Quản trị từ `t_ng_quan_qu_n_tr_bookstore_admin_1` & `t_ng_quan_qu_n_tr_bookstore_admin_2`:
+  - [x] 4 Bento KPI Cards phân tích doanh thu thực tế từ các đơn `hoan_thanh`, tổng đơn hàng mới, sách đã bán, tồn kho hệ thống.
+  - [x] Biểu đồ Doanh thu thời gian (SVG interactive chart) & Biểu đồ phân bổ cơ cấu thể loại (Donut SVG chart).
+  - [x] Bảng đơn hàng mới cần duyệt gấp (`cho_xac_nhan`) & Top 5 sách bán chạy nhất.
+  - [x] Widget cảnh báo tồn kho thấp (sách tồn kho <= 30 cuốn).
+  - [x] Widget duyệt đánh giá khách hàng mới nhất.
+  - [x] Bổ sung helper toàn cục `get_book_cover()` trong `Core/Helper.php`.
 - [ ] Quản lý Sách & Quản lý Kho từ `qu_n_l_s_ch_qu_n_l_kho_bookstore_admin/code.html`:
   - [ ] Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái.
   - [ ] Modal thêm sách `#modal-add-book` (upload ảnh bìa `uploads/books/`, gán nhiều tác giả qua `sach_tac_gia`).
