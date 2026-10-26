@@ -15,6 +15,7 @@ class App {
         'dang-ky'                           => ['AuthController', 'register'],
         'dang-xuat'                         => ['AuthController', 'logout'],
         'tai-khoan'                         => ['AccountController', 'profile'],
+        'tai-khoan/ho-so'                   => ['AccountController', 'profile'],
         'ho-so-ca-nhan'                     => ['AccountController', 'profile'],
         'tai-khoan/doi-mat-khau'            => ['AccountController', 'changePassword'],
         'tai-khoan/so-dia-chi'              => ['AccountController', 'addresses'],
@@ -135,6 +136,8 @@ class App {
                     unset($segments[1]);
                 }
                 $this->params = array_values($segments);
+            } else {
+                $this->render404("Đường dẫn '$url' không tồn tại.");
             }
         }
 

@@ -2,8 +2,8 @@
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Kiến trúc:** PHP 8.x Thuần (OOP, MVC Pattern, PDO Prepared Statements)  
 > **Design System:** Athenaeum Modern (Thư Viện Tinh Hoa Cổ Điển Hiện Đại v2.4)  
-> **Phiên bản cập nhật:** 3.0.0 (Hoàn thành Giai đoạn 3 - Giỏ hàng, Mã giảm giá, Đặt hàng & Quản lý đơn hàng độc giả)  
-> **Ngày cập nhật:** 25/10/2026  
+> **Phiên bản cập nhật:** 3.1.0 (Kiểm thử Hồi quy Toàn diện 100% Đạt - Sẵn sàng khởi động Giai đoạn 4: Admin Portal)  
+> **Ngày cập nhật:** 26/10/2026  
 
 ---
 
@@ -187,3 +187,33 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
       - Bước 3: *Đang Vận Chuyển*
       - Bước 4: *Giao Thành Công*
     - Hiển thị dòng thời gian thực tế ghi nhận từ bảng `lich_su_don_hang` kèm icon trực quan theo Design System Athenaeum Modern. Nếu đơn bị hủy, hiển thị banner cảnh báo và badge `ĐÃ HỦY` (Rose-100 / Red-600).
+11. **Quy tắc Định Tuyến & Bắt Lỗi 404 Chặt Chẽ:**
+    - `Core/App.php` phân giải route theo thứ tự: Friendly Routes -> Class Controller tương ứng -> Nếu không tồn tại bất kỳ controller nào hợp lệ, lập tức trả về `render404()` với `http_response_code(404)` và render `Views/client/404.php`. Nghiêm cấm fallback âm thầm về Trang Chủ nhằm bảo đảm tính toàn vẹn SEO.
+12. **Bảo Tồn Mã Nguồn Đã Được Yêu Cầu Giữ Nguyên:**
+    - Tệp `Views/client/account/order_detail.php` và thư mục `stitch_modern_bookstore_platform_ui_ux/` tuân thủ nghiêm ngặt chỉ dẫn của người dùng: Giữ nguyên vẹn, không tự ý chỉnh sửa nếu không có yêu cầu cụ thể.
+
+---
+
+## 6. LỆNH CÀI ĐẶT, VẬN HÀNH & KIỂM THỬ HỆ THỐNG
+
+### Vận hành cục bộ (Local Runtime):
+- Môi trường: XAMPP với Apache (Port 80) và MySQL (Port 3306).
+- URL gốc: `http://localhost/PHP_nang_cao/book_store_online/`
+
+### Kiểm thử hệ thống:
+```bash
+# 1. Quét cú pháp 42 file PHP toàn dự án
+php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\lint_all.php"
+
+# 2. Chạy Master Suite kiểm thử toàn diện 26 nghiệp vụ (DB, Auth, Sách, Đơn hàng)
+php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_all_features.php"
+
+# 3. Kiểm thử 14 HTTP Endpoints khách vãng lai (200, 302, 404)
+php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_endpoints.php"
+
+# 4. Kiểm thử 5 HTTP Endpoints có Session độc giả đăng nhập
+php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_auth_endpoints.php"
+
+# 5. Kiểm thử phân quyền truy cập Admin Portal
+php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_admin.php"
+```

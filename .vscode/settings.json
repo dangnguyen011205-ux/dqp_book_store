@@ -1,0 +1,16 @@
+{
+    "intelephense.environment.phpVersion": "8.2.0",
+    "intelephense.diagnostics.undefinedVariables": false,
+    "intelephense.diagnostics.undefinedTypes": true,
+    "intelephense.diagnostics.undefinedFunctions": true,
+    "intelephense.diagnostics.undefinedConstants": true,
+    "intelephense.diagnostics.undefinedClassConstants": true,
+    "intelephense.diagnostics.undefinedMethods": true,
+    "intelephense.diagnostics.undefinedProperties": true,
+    "intelephense.diagnostics.unusedSymbols": false,
+    "html.validate.scripts": true,
+    "html.validate.styles": true,
+    "files.associations": {
+        "*.php": "php"
+    }
+}

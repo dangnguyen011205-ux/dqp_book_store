@@ -1,7 +1,7 @@
 # BÁO CÁO TIẾN ĐỘ DỰ ÁN (PROJECT PROGRESS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Cập nhật:** Hoàn thành 100% Giai đoạn 3 / Sẵn sàng bước vào Giai đoạn 4 (Admin Portal)  
-> **Thời điểm cập nhật:** 25/10/2026  
+> **Thời điểm cập nhật:** 26/10/2026  
 
 ---
 
@@ -59,6 +59,7 @@
 | **Giao Diện Chi Tiết Đơn Hàng & Timeline Stepper** | `Views/client/account/order_detail.php` | Hoàn thành | Dựa trên `qu_n_l_theo_d_i_n_h_ng_bookstore/code.html`: **Timeline Stepper 4 bước** trực quan theo Design System Athenaeum Modern, hành trình vận đơn từ `lich_su_don_hang`, thông tin giao nhận, thanh toán, danh sách sản phẩm, modal hủy đơn kèm lý do. |
 | **Kiểm Thử Tích Hợp Tự Động (Integration Test)** | `scratch/test_stage3.php` | Hoàn thành | 14 test cases chạy qua PHP CLI đạt kết quả 100% Passed (Coupon, Cart, Transaction tạo đơn, trừ tồn kho, Timeline, Hủy đơn, hoàn trả tồn kho). |
 | **Kiểm Thử Thực Tế Trình Duyệt (Browser E2E)** | Browser Subagent | Hoàn thành | Đã quay video và chụp ảnh màn hình luồng thực tế: Đăng nhập -> Thêm giỏ -> Áp dụng mã `WELCOME2026` (-23.700đ) -> Đặt hàng COD -> Trang thành công `#BK-7` -> Danh sách đơn hàng -> Chi tiết đơn hàng với Timeline Stepper 4 bước -> Hủy đơn hàng và cập nhật huy hiệu `ĐÃ HỦY`. |
+| **Bộ Kiểm Thử Toàn Diện Hệ Thống (Master Regression)** | `scratch/test_all_features.php` & `lint_all.php` | Hoàn thành | **89/89 Ca kiểm thử đạt 100%**: Quét cú pháp 42/42 file PHP, kiểm tra CSDL 16 bảng, Auth bcrypt, cập nhật profile, giao tác địa chỉ mặc định, đếm sách thể loại, bộ lọc đa tiêu chí, rating summary, transaction đặt hàng & hủy đơn hoàn kho, kiểm tra 21 HTTP routes (khách, member, admin). |
 
 ---
 
@@ -77,6 +78,14 @@
    - *Khắc phục:* Sử dụng trực tiếp `curl.exe` cho mọi request kiểm thử HTTP.
 3. **Phân trang khi lọc số sao trong `Book::filterBooks()`:**
    - *Khắc phục:* Tách count query thành subquery khi có mệnh đề `HAVING`, đảm bảo phân trang đồng bộ 100%.
+4. **Xử lý đường dẫn không tồn tại (Fallback 404 Router):**
+   - *Nguyên nhân:* Trong `Core/App.php`, các URL lạ không khớp route và không có Controller tương ứng trước đây bị giữ nguyên controller mặc định là `HomeController`, âm thầm trả về HTTP 200 trang chủ.
+   - *Khắc phục:* Bổ sung nhánh `else { $this->render404(); }` đảm bảo mọi URL sai đều trả về đúng mã HTTP 404 và giao diện `Views/client/404.php`.
+5. **Đồng bộ Route Hồ sơ cá nhân (`tai-khoan/ho-so`):**
+   - *Khắc phục:* Bổ sung `'tai-khoan/ho-so' => ['AccountController', 'profile']` vào mảng `$routes` trong `Core/App.php`.
+6. **Cảnh báo tĩnh từ Extension IDE (DevSense / Intelephense):**
+   - *Khắc phục:* Thêm cấu hình `.vscode/settings.json` để ẩn các cảnh báo giả về biến template được trích xuất qua `extract($data)` trong mô hình PHP MVC thuần.
+   - *Cam kết:* Tuân thủ nghiêm ngặt chỉ dẫn của người dùng: Giữ nguyên tệp `order_detail.php` không sửa đổi.
 
 ---
 

@@ -1,7 +1,7 @@
 # DANH SÁCH NHIỆM VỤ DỰ ÁN (PROJECT TASKS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Cập nhật:** Hoàn thành 100% Giai đoạn 1, 2, 3 / Sẵn sàng triển khai Giai đoạn 4 (Admin Portal)  
-> **Thời điểm cập nhật:** 25/10/2026  
+> **Thời điểm cập nhật:** 26/10/2026  
 
 ---
 
@@ -87,6 +87,12 @@
     - Ghi log hủy kèm lý do vào `lich_su_don_hang`.
 - [x] Viết và thực thi kiểm thử tích hợp tự động `scratch/test_stage3.php` đạt `100% Passed` (14/14 test cases).
 - [x] Kiểm thử toàn diện trình duyệt bằng Browser Subagent: Đăng nhập -> Thêm giỏ -> Áp voucher `WELCOME2026` -> Checkout COD -> Đặt hàng #7 -> Xem danh sách đơn -> Chi tiết đơn hàng với Timeline Stepper -> Hủy đơn và xác nhận badge `ĐÃ HỦY`.
+- [x] Quét cú pháp toàn diện 42/42 tệp PHP dự án đạt 100% hợp lệ (`lint_all.php`).
+- [x] Thực thi Master Test Suite kiểm thử 26 chức năng trọng yếu (Database 16 bảng, Auth bcrypt, Profile, Address transaction, Category count, Multi-filter book, Review summary, Coupon engine, Cart session merge, Order transaction với khóa dòng FOR UPDATE, Timeline Stepper, Cancel order hoàn kho) đạt 26/26 Passed (`test_all_features.php`).
+- [x] Kiểm thử toàn bộ 21 HTTP endpoints (khách vãng lai, thành viên đăng nhập, admin portal) đạt 100% mã phản hồi chuẩn (`test_endpoints.php`, `test_auth_endpoints.php`, `test_admin.php`).
+- [x] Chuẩn hóa bộ điều hướng `Core/App.php`: Thêm route `'tai-khoan/ho-so'` và nhánh bắt lỗi 404 trả về HTTP code 404 cùng giao diện `Views/client/404.php`.
+- [x] Cấu hình `.vscode/settings.json` để loại trừ các cảnh báo tĩnh giả lập của IDE DevSense/Intelephense trên các tệp View PHP MVC thuần.
+- [x] Tuân thủ cam kết: Giữ nguyên vẹn tệp `Views/client/account/order_detail.php` và thư mục `stitch_modern_bookstore_platform_ui_ux/`.
 
 ---
 
