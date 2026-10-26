@@ -107,18 +107,11 @@ $currentUrl = trim($_GET['url'] ?? '', '/');
                     <span>Tổng quan Dashboard</span>
                 </a>
 
-                <!-- Quản lý Sách -->
+                <!-- Quản lý Sách và Tồn Kho -->
                 <a href="<?= base_url('admin/sach') ?>" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= str_starts_with($currentUrl, 'admin/sach') ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= (str_starts_with($currentUrl, 'admin/sach') || str_starts_with($currentUrl, 'admin/kho')) ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
                     <span class="material-symbols-outlined text-[20px]">auto_stories</span>
-                    <span>Quản lý Tựa Sách</span>
-                </a>
-
-                <!-- Quản lý Kho -->
-                <a href="<?= base_url('admin/kho') ?>" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= str_starts_with($currentUrl, 'admin/kho') ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
-                    <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-                    <span>Tồn Kho & Phiếu Kho</span>
+                    <span>Quản lý sách và tồn kho</span>
                 </a>
 
                 <!-- Quản lý Đơn Hàng -->
