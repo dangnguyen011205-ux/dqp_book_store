@@ -69,6 +69,7 @@
 |:---|:---|:---:|:---|
 | **Bảng Điều Khiển Quản Trị (Interactive Dashboard)** | `Controllers/AdminDashboardController.php`, `Views/admin/dashboard.php` | Hoàn thành | - 4 Bento KPI Cards phân tích số liệu thực (Doanh thu thực đơn `hoan_thanh`, Tổng đơn hàng kèm sub-badge chờ duyệt, Sách đã bán, Tồn kho hệ thống).<br>- Biểu đồ Doanh Thu SVG Area & Column Chart với hiệu ứng Glow, các cột volume, mốc đỉnh cao hôm nay.<br>- Biểu đồ Phân Bổ Thể Loại SVG Donut Chart tính toán tỷ trọng chính xác từ CSDL.<br>- Bảng Đơn Hàng Mới Cần Xử Lý (5 đơn mới nhất kèm nút duyệt/xử lý nhanh).<br>- Top 5 Tựa Sách Bán Chạy Nhất (kèm ảnh bìa, tác giả, thể loại, doanh thu, tồn kho).<br>- Widget Duyệt Đánh Giá Khách Hàng (5 sao vàng, trích dẫn phản hồi) & Cảnh Báo Tồn Kho Thấp.<br>- Kiểm thử tự động `test_admin.php` và xác minh thực tế qua Browser Subagent. |
 | **Quản Lý Sách & Quản Lý Kho (Books & Inventory)** | `Controllers/AdminBookController.php`, `Controllers/AdminInventoryController.php`, `Models/Book.php`, `Models/InventorySlip.php`, `Views/admin/books/index.php` | Hoàn thành | - 4 Bento KPI cards (Tổng đầu sách, Tổng tồn kho, Cảnh báo sắp hết hàng &le; 10 cuốn, Giá trị tồn kho ước tính).<br>- Danh sách sách với bộ lọc đa tiêu chí (keyword, category, status: all, `dang_ban`, `sap_het`, `ngung_ban`) và phân trang.<br>- Modal `#modal-add-book` hỗ trợ upload ảnh bìa `Public/uploads/books/`, gán nhiều tác giả, tạo phiếu nhập kho đầu kỳ tự động.<br>- Modal `#modal-edit-book` nạp dữ liệu động AJAX JSON, cập nhật giá, thông tin xuất bản và trạng thái.<br>- Modal `#modal-quick-slip` và phân hệ Phiếu kho luân chuyển xử lý bằng Database Transaction với khóa dòng `SELECT ... FOR UPDATE`, tự động tăng/giảm tồn kho `sach.so_luong_ton`, kiểm tra tồn kho không âm khi xuất/giảm.<br>- Kiểm thử tự động 16/16 Passed (`test_admin_books_inventory.php`) và xác minh giao diện thực tế qua Browser Subagent. |
+| **Quản Lý Đơn Hàng Admin (Admin Order Management)** | `Controllers/AdminOrderController.php`, `Models/Order.php`, `Views/admin/orders/index.php` | Hoàn thành | - 4 Bento KPI cards (Tổng đơn & Doanh thu hôm nay, Chờ xác nhận & Tồn đọng > 2 giờ, Đang vận chuyển, Tỷ lệ giao thành công & Hoàn tất trong tháng).<br>- Tabs trạng thái 6 mục kèm counter badges (`tat_ca`, `cho_xac_nhan`, `da_xac_nhan`, `dang_giao`, `hoan_thanh`, `da_huy`).<br>- Bộ lọc đa năng (mã đơn `#BK-...`, tên khách, SĐT, địa chỉ, khoảng ngày đặt, phương thức COD/VNPAY).<br>- Bảng dữ liệu hiển thị ảnh bìa, tóm tắt sách, giá trị thanh toán, dropdown đổi trạng thái nhanh.<br>- Slide-over Drawer `#orderDrawer`: Chi tiết người nhận, danh sách sách, tổng chi phí, Timeline nhật ký xử lý từ `lich_su_don_hang`, nút hành động theo chu kỳ.<br>- Database Transaction an toàn với khóa dòng `SELECT ... FOR UPDATE`: Tự động hoàn tồn kho `sach.so_luong_ton`, giảm số lượt dùng voucher `ma_giam_gia.da_dung`, hủy thanh toán khi hủy đơn; tự động đánh dấu thanh toán COD `thanh_cong` khi hoàn tất; ghi log lịch sử đơn hàng.<br>- Toast notification tức thì `#statusToast`.<br>- Kiểm thử tự động 47/47 Passed (`scratch/test_admin_orders.php`) và kiểm thử trực quan Browser Subagent. |
 
 ---
 
@@ -102,27 +103,12 @@
 ## 4. NHỮNG VIỆC CHƯA HOÀN THÀNH (GIAI ĐOẠN 4 - ADMIN PORTAL)
 
 ### Giai đoạn 4: Toàn Bộ Phân Hệ Quản Trị (Admin Portal)
-- **1. Quản Lý Sách & Quản Lý Kho (CRUD Sách, Kho vận & Lập phiếu kho):**
-  - Danh sách sách với thanh tìm kiếm, bộ lọc danh mục/trạng thái kinh doanh.
-  - Modal thêm sách `#modal-add-book` (upload ảnh bìa `Public/uploads/books/`, gán nhiều tác giả qua bảng `sach_tac_gia`).
-  - Sửa thông tin sách, cập nhật giá và bật/tắt trạng thái kinh doanh (`dang_ban = 1/0`).
-  - Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập `nhap`, Phiếu Xuất `xuat`, Điều chỉnh kiểm kê `dieu_chinh`) bằng Database Transaction tự động cập nhật `so_luong_ton`.
-- **2. Quản Lý Đơn Hàng Admin:**
-  - Danh sách sách với bộ lọc quản trị, tìm kiếm theo từ khóa/danh mục.
-  - Modal thêm sách `#modal-add-book` (nhập thông tin, tải ảnh bìa lên `Public/uploads/books/`, gán nhiều tác giả qua bảng `sach_tac_gia`).
-  - Sửa thông tin sách và chuyển đổi trạng thái đang bán (`dang_ban = 1/0`).
-- **3. Quản Lý Kho & Phiếu Kho (`phieu_kho`):**
-  - Bảng theo dõi tồn kho, cảnh báo sách sắp hết.
-  - Modal lập phiếu kho nhanh `#modal-quick-slip` (Phiếu nhập `nhap`, Phiếu xuất `xuat`, Điều chỉnh `kiem_ke`).
-  - Tự động cộng/trừ tồn kho trong `sach` bằng Database Transaction khi lưu phiếu kho.
-- **4. Quản Lý Đơn Hàng Admin:**
-  - Bảng danh sách đơn hàng có bộ lọc trạng thái, tìm kiếm theo mã đơn / tên khách.
-  - Modal/Trang chi tiết đơn hàng: Cập nhật trạng thái (`cho_xac_nhan` -> `da_xac_nhan` -> `dang_giao` -> `hoan_thanh` / `da_huy`).
-  - Tự động ghi log vào bảng `lich_su_don_hang` và hoàn trả kho nếu hủy đơn từ phía admin.
-- **5. Quản Lý & Duyệt Đánh Giá (`danh_gia`):**
-  - Danh sách đánh giá chờ duyệt (`cho_duyet`).
+- **1. CRUD Danh Mục Thể Loại, Tác Giả & Nhà Xuất Bản:**
+  - Thêm, sửa, xóa, tìm kiếm danh mục thể loại (`the_loai`), tác giả (`tac_gia`), nhà xuất bản (`nha_xuat_ban`).
+- **2. Quản Lý & Duyệt Đánh Giá (`danh_gia`):**
+  - Danh sách đánh giá chờ duyệt (`cho_duyet`) từ `duy_t_nh_gi_kh_ch_h_ng_bookstore_admin/code.html`.
   - Nút duyệt hiển thị (`hien_thi`) hoặc ẩn vi phạm (`an`).
-- **6. Quản Lý Mã Giảm Giá & Người Dùng:**
+- **3. Quản Lý Mã Giảm Giá & Người Dùng:**
   - Thêm, sửa, xóa, vô hiệu hóa mã giảm giá (`ma_giam_gia`).
   - Quản lý danh sách người dùng (`nguoi_dung`): Phân quyền (`admin`/`khach_hang`), khóa hoặc mở khóa tài khoản (`hoat_dong`/`khoa`).
 

@@ -110,9 +110,15 @@
   - [x] Modal sửa thông tin sách `#modal-edit-book` nạp dữ liệu động qua AJAX JSON, cập nhật giá, tác giả, mô tả và trạng thái kinh doanh.
   - [x] Quản lý Tồn kho & Lập phiếu kho qua Modal `#modal-quick-slip` (Phiếu Nhập, Xuất, Điều chỉnh kiểm kê) bằng Database Transaction an toàn với khóa dòng `SELECT ... FOR UPDATE`.
   - [x] Chuyển đổi mượt 2 tabs: Danh sách Sách & Tồn kho vs Lịch sử Phiếu kho Luân chuyển.
-- [ ] Quản lý Đơn hàng từ `qu_n_l_n_h_ng_bookstore_admin/code.html`:
-  - [ ] Lọc đơn theo mã, tên khách hàng, khoảng ngày đặt, tabs trạng thái.
-  - [ ] Cập nhật trạng thái đơn hàng & thanh toán, tự động ghi log vào `lich_su_don_hang` (hoàn tồn kho nếu hủy từ admin).
+- [x] Quản lý Đơn hàng từ `qu_n_l_n_h_ng_bookstore_admin/code.html` (Hoàn thành 100%):
+  - [x] 4 Thẻ chỉ số Bento KPI: Tổng đơn & Doanh thu hôm nay, Đơn Chờ xác nhận & cảnh báo tồn đọng > 2 giờ, Đơn đang vận chuyển, Tỷ lệ giao thành công & hoàn tất trong tháng.
+  - [x] Thanh Tabs trạng thái (`tat_ca`, `cho_xac_nhan`, `da_xac_nhan`, `dang_giao`, `hoan_thanh`, `da_huy`) kèm huy hiệu số lượng đếm trên từng tab.
+  - [x] Bộ lọc nâng cao: Tìm kiếm theo mã đơn (`#BK-...`), tên khách hàng, số điện thoại, địa chỉ; lọc khoảng ngày đặt (`tu_ngay`, `den_ngay`); lọc phương thức thanh toán (`COD`, `VNPAY`).
+  - [x] Bảng dữ liệu đơn hàng: Tóm tắt kiện sách kèm ảnh bìa, tổng tiền, phương thức & trạng thái thanh toán, huy hiệu trạng thái đơn, dropdown đổi trạng thái nhanh.
+  - [x] Slide-over Drawer `#orderDrawer`: Xem chi tiết kiện hàng, thông tin người nhận, danh sách sách, tổng chi phí (tiền hàng, ship, giảm giá), lịch sử hành trình vận đơn từ `lich_su_don_hang`, nút hành trình tiếp theo (Xác nhận, Giao bưu cục, Hoàn tất, Hủy đơn).
+  - [x] Xử lý trạng thái an toàn bằng Database Transaction với khóa dòng `SELECT ... FOR UPDATE`: Tự động hoàn trả tồn kho `sach.so_luong_ton`, giảm số lượt dùng voucher `ma_giam_gia.da_dung`, hủy thanh toán khi Hủy đơn; tự động đánh dấu thanh toán COD `thanh_cong` khi hoàn tất đơn; ghi log chi tiết vào `lich_su_don_hang`.
+  - [x] Tích hợp Toast notification `#statusToast` thông báo tức thì khi thao tác AJAX thành công/thất bại.
+  - [x] Kiểm thử tích hợp tự động 47/47 Passed (`scratch/test_admin_orders.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
 - [ ] CRUD Danh mục Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`).
 - [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Thêm mã mới, cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng, vô hiệu hóa.
 - [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).
