@@ -127,6 +127,11 @@
   - [x] Bảng dữ liệu chi tiết kèm avatar người đánh giá, huy hiệu "Đã mua hàng", bìa sách, sao vàng, nội dung nhận xét, thời gian, trạng thái badge, nút duyệt/ẩn/xóa nhanh.
   - [x] Toast notification tức thì `#statusToast` phản hồi kết quả thao tác AJAX không cần tải lại trang.
   - [x] Kiểm thử tích hợp tự động 35/35 Passed (`scratch/test_admin_reviews.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
-- [ ] CRUD Danh mục Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`).
+- [x] CRUD Danh mục Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`) (Hoàn thành 100%):
+  - [x] Thanh Sub-navigation tabs chuyển đổi mượt mà 3 phân hệ Metadata (`admin/the-loai`, `admin/tac-gia`, `admin/nha-xuat-ban`) kèm counter badges.
+  - [x] Phân hệ Thể Loại Sách (`admin/the-loai`): 3 Bento KPI cards, tìm kiếm, Modal thêm/sửa `#categoryModal`, xóa an toàn chặn vi phạm ràng buộc toàn vẹn khi đang có sách liên kết.
+  - [x] Phân hệ Tác Giả (`admin/tac-gia`): 3 Bento KPI cards, tìm kiếm, avatar chữ cái, Modal thêm/sửa `#authorModal`, xóa an toàn chặn vi phạm khi đang có sách.
+  - [x] Phân hệ Nhà Xuất Bản (`admin/nha-xuat-ban`): 3 Bento KPI cards, tìm kiếm, thông tin địa chỉ & liên hệ, Modal thêm/sửa `#publisherModal`, xóa an toàn chặn vi phạm khi đang có sách.
+  - [x] Kiểm thử tích hợp tự động 36/36 Passed (`scratch/test_admin_metadata.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
 - [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Thêm mã mới, cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng, vô hiệu hóa.
 - [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).

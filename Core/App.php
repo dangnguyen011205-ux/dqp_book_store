@@ -83,16 +83,19 @@ class App {
         'admin/the-loai'                    => ['AdminCategoryController', 'index'],
         'quan-ly-danh-muc'                  => ['AdminCategoryController', 'index'],
         'admin/the-loai/them'               => ['AdminCategoryController', 'create'],
+        'admin/the-loai/chi-tiet/(\d+)'     => ['AdminCategoryController', 'detail'],
         'admin/the-loai/sua/(\d+)'          => ['AdminCategoryController', 'edit'],
         'admin/the-loai/xoa/(\d+)'          => ['AdminCategoryController', 'delete'],
 
         'admin/tac-gia'                     => ['AdminAuthorController', 'index'],
         'admin/tac-gia/them'                => ['AdminAuthorController', 'create'],
+        'admin/tac-gia/chi-tiet/(\d+)'      => ['AdminAuthorController', 'detail'],
         'admin/tac-gia/sua/(\d+)'           => ['AdminAuthorController', 'edit'],
         'admin/tac-gia/xoa/(\d+)'           => ['AdminAuthorController', 'delete'],
 
         'admin/nha-xuat-ban'                => ['AdminPublisherController', 'index'],
         'admin/nha-xuat-ban/them'           => ['AdminPublisherController', 'create'],
+        'admin/nha-xuat-ban/chi-tiet/(\d+)' => ['AdminPublisherController', 'detail'],
         'admin/nha-xuat-ban/sua/(\d+)'      => ['AdminPublisherController', 'edit'],
         'admin/nha-xuat-ban/xoa/(\d+)'      => ['AdminPublisherController', 'delete'],
 
