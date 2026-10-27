@@ -99,6 +99,9 @@
    - *Cam kết:* Tuân thủ nghiêm ngặt chỉ dẫn của người dùng: Giữ nguyên tệp `order_detail.php` không sửa đổi.
 7. **Đồng bộ hiển thị ảnh bìa toàn hệ thống (`get_book_cover`):**
    - *Khắc phục:* Bổ sung helper toàn cục `get_book_cover(?string $anhBia)` trong `Core/Helper.php`, tự động ưu tiên ảnh upload cục bộ `Public/uploads/books/`, URL trực tiếp, hoặc fallback ảnh bìa chất lượng cao chuẩn Athenaeum.
+8. **Lỗi 404 khi Submit Modal Thêm Thể Loại, Tác Giả, Nhà Xuất Bản (Thiếu dấu `/` ở `baseUrl`):**
+   - *Nguyên nhân:* Biến JavaScript `const baseUrl = '<?= base_url() ?>';` trả về `http://localhost/PHP_nang_cao/book_store_online` (không có dấu gạch chéo cuối). Khi JavaScript gán lại action form bằng `baseUrl + 'admin/the-loai/them'`, URL bị ghép dính liền thành `.../book_store_onlineadmin/the-loai/them`, dẫn tới lỗi 404 Not Found từ Apache.
+   - *Khắc phục:* Cập nhật thành `const baseUrl = '<?= base_url() ?>/';` trong cả 3 tệp giao diện [Views/admin/categories/index.php](file:///c:/xampp/htdocs/PHP_nang_cao/book_store_online/Views/admin/categories/index.php), [Views/admin/authors/index.php](file:///c:/xampp/htdocs/PHP_nang_cao/book_store_online/Views/admin/authors/index.php) và [Views/admin/publishers/index.php](file:///c:/xampp/htdocs/PHP_nang_cao/book_store_online/Views/admin/publishers/index.php). Đã kiểm thử trình duyệt thực tế xác nhận submit thành công 100%.
 
 ---
 

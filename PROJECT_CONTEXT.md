@@ -2,8 +2,8 @@
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Kiến trúc:** PHP 8.x Thuần (OOP, MVC Pattern, PDO Prepared Statements)  
 > **Design System:** Athenaeum Modern (Thư Viện Tinh Hoa Cổ Điển Hiện Đại v2.4)  
-> **Phiên bản cập nhật:** 3.1.0 (Kiểm thử Hồi quy Toàn diện 100% Đạt - Sẵn sàng khởi động Giai đoạn 4: Admin Portal)  
-> **Ngày cập nhật:** 26/10/2026  
+> **Phiên bản cập nhật:** 4.5.0 (Hoàn thành 5/7 Nhiệm vụ Giai đoạn 4: Admin Portal)  
+> **Ngày cập nhật:** 27/10/2026  
 
 ---
 
@@ -83,19 +83,27 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │   ├── BookController.php        # Danh mục, bộ lọc tìm kiếm đa tiêu chí, chi tiết sách, gửi đánh giá
 │   ├── CartController.php        # Quản lý giỏ hàng, cập nhật số lượng, áp dụng / gỡ mã giảm giá
 │   ├── CheckoutController.php    # Thanh toán, chọn/thêm địa chỉ, phí ship, xác nhận đơn hàng
-│   └── AdminDashboardController.php # Bảng điều khiển quản trị tổng quan
+│   ├── AdminDashboardController.php # Bảng điều khiển quản trị tổng quan (4 Bento KPI cards, biểu đồ SVG)
+│   ├── AdminBookController.php   # Quản lý sách: tìm kiếm, bộ lọc, modal thêm/sửa, upload ảnh bìa, gán tác giả
+│   ├── AdminInventoryController.php # Quản lý tồn kho: lập phiếu nhập/xuất/điều chỉnh với Transaction
+│   ├── AdminOrderController.php  # Quản lý đơn hàng: bộ lọc nâng cao, drawer chi tiết, chuyển đổi trạng thái
+│   ├── AdminReviewController.php # Kiểm duyệt đánh giá: bộ lọc sao, tabs trạng thái, floating bulk toolbar
+│   ├── AdminCategoryController.php # Quản lý thể loại sách: modal thêm/sửa, xóa an toàn kiểm tra sách
+│   ├── AdminAuthorController.php # Quản lý tác giả: modal thêm/sửa, xóa an toàn kiểm tra sách
+│   └── AdminPublisherController.php # Quản lý nhà xuất bản: modal thêm/sửa, xóa an toàn kiểm tra sách
 │
 ├── Models/
 │   ├── User.php                  # Tương tác bảng nguoi_dung
 │   ├── Address.php               # Tương tác bảng dia_chi (quản lý địa chỉ mặc định bằng Transaction)
-│   ├── Category.php              # Tương tác bảng the_loai (danh mục sách, đếm đầu sách)
+│   ├── Category.php              # Tương tác bảng the_loai (danh mục sách, đếm đầu sách, safe delete)
 │   ├── Book.php                  # Tương tác bảng sach, sach_tac_gia, chi_tiet_don_hang
-│   ├── Author.php                # Tương tác bảng tac_gia
-│   ├── Publisher.php             # Tương tác bảng nha_xuat_ban
-│   ├── Review.php                # Tương tác bảng danh_gia (rating summary, kiểm duyệt, kiểm tra quyền mua)
+│   ├── Author.php                # Tương tác bảng tac_gia (safe delete, đếm tác phẩm)
+│   ├── Publisher.php             # Tương tác bảng nha_xuat_ban (safe delete, đếm tác phẩm)
+│   ├── Review.php                # Tương tác bảng danh_gia (rating summary, kiểm duyệt, duyệt hàng loạt)
 │   ├── Cart.php                  # Tương tác bảng gio_hang & chi_tiet_gio_hang, session cart, merge cart
 │   ├── Coupon.php                # Tương tác bảng ma_giam_gia (xác thực thời hạn, đơn tối thiểu, số lượt)
-│   └── Order.php                 # Tương tác bảng don_hang, chi_tiet_don_hang, thanh_toan, lich_su_don_hang
+│   ├── Order.php                 # Tương tác bảng don_hang, chi_tiet_don_hang, thanh_toan, lich_su_don_hang
+│   └── InventorySlip.php         # Tương tác bảng phieu_kho & chi_tiet_phieu_kho (nhập, xuất, điều chỉnh)
 │
 ├── Views/
 │   ├── layout/
@@ -119,7 +127,19 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │   │       ├── orders.php        # Quản lý đơn hàng (Tabs trạng thái, đếm số lượng, danh sách thẻ đơn)
 │   │       └── order_detail.php  # Chi tiết đơn hàng (Timeline Stepper 4 bước, hành trình vận đơn, hủy đơn)
 │   └── admin/
-│       └── dashboard.php         # Trang tổng quan quản trị (4 Bento KPI cards)
+│       ├── dashboard.php         # Bảng điều khiển quản trị tổng quan (4 Bento KPI cards, SVG charts)
+│       ├── books/
+│       │   └── index.php         # Quản lý sách & kho: modal thêm/sửa sách, modal lập phiếu kho, 2 tabs
+│       ├── orders/
+│       │   └── index.php         # Quản lý đơn hàng: tabs trạng thái, bộ lọc, slide-over drawer, đổi trạng thái
+│       ├── reviews/
+│       │   └── index.php         # Quản lý & duyệt đánh giá: tabs, lọc sao, floating bulk toolbar
+│       ├── categories/
+│       │   └── index.php         # Quản lý thể loại sách: sub-nav, bento KPI, modal thêm/sửa, safe delete
+│       ├── authors/
+│       │   └── index.php         # Quản lý tác giả: sub-nav, bento KPI, modal thêm/sửa, avatar, safe delete
+│       └── publishers/
+│           └── index.php         # Quản lý nhà xuất bản: sub-nav, bento KPI, modal thêm/sửa, safe delete
 │
 ├── Public/
 │   ├── css/
@@ -127,7 +147,7 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │   ├── js/
 │   │   └── main.js               # Quản lý Toast timeout, đóng mở modal
 │   └── uploads/
-│       └── books/                # Thư mục lưu ảnh bìa sách
+│       └── books/                # Thư mục lưu ảnh bìa sách tải lên từ Admin
 │
 ├── stitch_modern_bookstore_platform_ui_ux/  # [READ-ONLY SINGLE SOURCE OF TRUTH] 13 folder giao diện mẫu
 └── vnpay_php/                    # Thư mục chứa mã nguồn mẫu tích hợp cổng thanh toán VNPAY
@@ -191,6 +211,22 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
     - `Core/App.php` phân giải route theo thứ tự: Friendly Routes -> Class Controller tương ứng -> Nếu không tồn tại bất kỳ controller nào hợp lệ, lập tức trả về `render404()` với `http_response_code(404)` và render `Views/client/404.php`. Nghiêm cấm fallback âm thầm về Trang Chủ nhằm bảo đảm tính toàn vẹn SEO.
 12. **Bảo Tồn Mã Nguồn Đã Được Yêu Cầu Giữ Nguyên:**
     - Tệp `Views/client/account/order_detail.php` và thư mục `stitch_modern_bookstore_platform_ui_ux/` tuân thủ nghiêm ngặt chỉ dẫn của người dùng: Giữ nguyên vẹn, không tự ý chỉnh sửa nếu không có yêu cầu cụ thể.
+13. **Quy tắc Quản Lý Phiếu Kho & Kiểm Kê Hàng Tồn (Inventory Slips):**
+    - Mọi thao tác nhập hàng, xuất hàng, hoặc điều chỉnh kiểm kê đều phải thông qua Database Transaction (`beginTransaction()`) với khóa dòng `SELECT ... FOR UPDATE` trên bảng `sach`.
+    - Khi xuất kho hoặc điều chỉnh giảm, hệ thống bắt buộc kiểm tra `so_luong_ton - so_luong >= 0`, nghiêm cấm để xảy ra tình trạng tồn kho âm.
+    - Lưu vết chi tiết vào `phieu_kho` và `chi_tiet_phieu_kho` kèm thông tin người lập, ghi chú và lý do điều chỉnh.
+14. **Quy tắc Xử Lý Vòng Đời Đơn Hàng Phía Quản Trị (Admin Order Cycle):**
+    - Chuyển đổi trạng thái đơn hàng (`cho_xac_nhan` -> `da_xac_nhan` -> `dang_giao` -> `hoan_thanh` -> `da_huy`) được bảo vệ bằng Transaction và khóa dòng `SELECT ... FOR UPDATE`.
+    - Khi Admin Hủy đơn: Tự động hoàn trả tồn kho vào bảng `sach`, giảm số lượt dùng voucher `ma_giam_gia.da_dung`, hủy bản ghi thanh toán và ghi nhật ký vận chuyển vào `lich_su_don_hang`.
+    - Khi Admin Hoàn tất đơn: Tự động cập nhật thanh toán COD thành `thanh_cong` nếu khách thanh toán khi nhận hàng.
+15. **Quy tắc Kiểm Duyệt Đánh Giá Khách Hàng (Review Moderation):**
+    - Hỗ trợ 3 trạng thái kiểm duyệt: `cho_duyet` (mới gửi), `hien_thi` (công khai ra trang chi tiết sách và trang chủ), `an` (vi phạm/ẩn).
+    - Hỗ trợ thanh công cụ hàng loạt Floating Bulk Toolbar (`#bulkToolbar`) cho phép Admin chọn nhiều đánh giá cùng lúc để Duyệt hiển thị, Ẩn hoặc Xóa vĩnh viễn với phản hồi AJAX Toast tức thì.
+16. **Quy tắc Bảo Vệ Ràng Buộc Khóa Ngoại Metadata (Safe Delete):**
+    - Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`) trước khi xóa bắt buộc kiểm tra xem có sách liên kết trong hệ thống hay không (`tong_sach > 0`).
+    - Nếu đang có sách liên kết, hệ thống chủ động chặn xóa từ cấp Model và trả về cảnh báo thân thiện, ngăn chặn lỗi vi phạm khóa ngoại MySQL (`FOREIGN KEY constraint fails`).
+17. **Quy tắc Trailing Slash `baseUrl` Phía Client JavaScript:**
+    - Khi nhúng `base_url()` vào JavaScript làm tiền tố URL cho các lời gọi AJAX hoặc form action động, bắt buộc phải có dấu gạch chéo cuối: `const baseUrl = '<?= base_url() ?>/';` để ngăn chặn việc nối chuỗi thiếu slash dẫn tới lỗi 404 dính liền tên miền (ví dụ: `.../book_store_onlineadmin/...`).
 
 ---
 
@@ -199,21 +235,25 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 ### Vận hành cục bộ (Local Runtime):
 - Môi trường: XAMPP với Apache (Port 80) và MySQL (Port 3306).
 - URL gốc: `http://localhost/PHP_nang_cao/book_store_online/`
+- Phân hệ Admin: `http://localhost/PHP_nang_cao/book_store_online/admin`
 
 ### Kiểm thử hệ thống:
 ```bash
-# 1. Quét cú pháp 42 file PHP toàn dự án
-php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\lint_all.php"
+# 1. Quét cú pháp toàn bộ 73 tệp PHP toàn dự án
+php scratch/test_lint_all.php
 
-# 2. Chạy Master Suite kiểm thử toàn diện 26 nghiệp vụ (DB, Auth, Sách, Đơn hàng)
-php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_all_features.php"
+# 2. Chạy Master Suite kiểm thử toàn diện Giai đoạn 1, 2, 3 (26 nghiệp vụ)
+php scratch/test_all_features.php
 
-# 3. Kiểm thử 14 HTTP Endpoints khách vãng lai (200, 302, 404)
-php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_endpoints.php"
+# 3. Kiểm thử tích hợp Quản lý Sách & Kho Admin (16 test cases)
+php scratch/test_admin_books_inventory.php
 
-# 4. Kiểm thử 5 HTTP Endpoints có Session độc giả đăng nhập
-php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_auth_endpoints.php"
+# 4. Kiểm thử tích hợp Quản lý Đơn hàng Admin (47 test cases)
+php scratch/test_admin_orders.php
 
-# 5. Kiểm thử phân quyền truy cập Admin Portal
-php "C:\Users\LENOVO\.gemini\antigravity-ide\brain\55245e79-dbfa-4acd-995c-573248881757\scratch\test_admin.php"
+# 5. Kiểm thử tích hợp Quản lý & Duyệt Đánh giá (35 test cases)
+php scratch/test_admin_reviews.php
+
+# 6. Kiểm thử tích hợp CRUD Metadata Thể loại, Tác giả, NXB (36 test cases)
+php scratch/test_admin_metadata.php
 ```
