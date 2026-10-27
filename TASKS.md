@@ -119,9 +119,14 @@
   - [x] Xử lý trạng thái an toàn bằng Database Transaction với khóa dòng `SELECT ... FOR UPDATE`: Tự động hoàn trả tồn kho `sach.so_luong_ton`, giảm số lượt dùng voucher `ma_giam_gia.da_dung`, hủy thanh toán khi Hủy đơn; tự động đánh dấu thanh toán COD `thanh_cong` khi hoàn tất đơn; ghi log chi tiết vào `lich_su_don_hang`.
   - [x] Tích hợp Toast notification `#statusToast` thông báo tức thì khi thao tác AJAX thành công/thất bại.
   - [x] Kiểm thử tích hợp tự động 47/47 Passed (`scratch/test_admin_orders.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
+- [x] Quản lý & Duyệt Đánh giá từ `duy_t_nh_gi_kh_ch_h_ng_bookstore_admin/code.html` (Hoàn thành 100%):
+  - [x] 4 Thẻ chỉ số Bento: Đánh giá Chờ Duyệt (cảnh báo cần xử lý gấp), Đang Hiển Thị (tỷ lệ công khai), Điểm Đánh Giá Toàn Sàn (sao vàng và tỷ lệ hài lòng 4-5 sao), Đã Ẩn / Vi Phạm.
+  - [x] Thanh Tabs trạng thái (`tat_ca`, `cho_duyet`, `hien_thi`, `an`) kèm huy hiệu số lượng đếm trên từng tab.
+  - [x] Bộ lọc xếp hạng sao (Tất cả sao, 5★, 4★, 3★, 2★, 1★), tìm kiếm tức thì theo độc giả, email, tên sách, nội dung nhận xét; sắp xếp mới nhất, cũ nhất, sao cao/thấp.
+  - [x] Thanh thao tác hàng loạt Floating Bulk Toolbar `#bulkToolbar`: Duyệt hiển thị, Ẩn đánh giá, Xóa vĩnh viễn nhiều đánh giá cùng lúc.
+  - [x] Bảng dữ liệu chi tiết kèm avatar người đánh giá, huy hiệu "Đã mua hàng", bìa sách, sao vàng, nội dung nhận xét, thời gian, trạng thái badge, nút duyệt/ẩn/xóa nhanh.
+  - [x] Toast notification tức thì `#statusToast` phản hồi kết quả thao tác AJAX không cần tải lại trang.
+  - [x] Kiểm thử tích hợp tự động 35/35 Passed (`scratch/test_admin_reviews.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
 - [ ] CRUD Danh mục Thể loại (`the_loai`), Tác giả (`tac_gia`), Nhà xuất bản (`nha_xuat_ban`).
 - [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Thêm mã mới, cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng, vô hiệu hóa.
 - [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).
-- [ ] Quản lý & Duyệt Đánh giá từ `duy_t_nh_gi_kh_ch_h_ng_bookstore_admin/code.html`:
-  - [ ] 4 thẻ chỉ số đánh giá, lọc theo số sao / trạng thái (`cho_duyet`, `hien_thi`, `an`) / tựa sách.
-  - [ ] Duyệt hiển thị (`hien_thi`) hoặc Ẩn vi phạm (`an`).

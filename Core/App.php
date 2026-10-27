@@ -73,8 +73,12 @@ class App {
         'admin/don-hang/cap-nhat-trang-thai'=> ['AdminOrderController', 'updateStatus'],
 
         'admin/danh-gia'                    => ['AdminReviewController', 'index'],
+        'duyet-danh-gia'                    => ['AdminReviewController', 'index'],
         'admin/danh-gia/duyet/(\d+)'        => ['AdminReviewController', 'approve'],
         'admin/danh-gia/an/(\d+)'           => ['AdminReviewController', 'hide'],
+        'admin/danh-gia/xoa/(\d+)'          => ['AdminReviewController', 'delete'],
+        'admin/danh-gia/cap-nhat-trang-thai'=> ['AdminReviewController', 'updateStatus'],
+        'admin/danh-gia/bulk'               => ['AdminReviewController', 'bulk'],
 
         'admin/the-loai'                    => ['AdminCategoryController', 'index'],
         'quan-ly-danh-muc'                  => ['AdminCategoryController', 'index'],
