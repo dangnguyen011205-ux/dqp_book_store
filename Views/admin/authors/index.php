@@ -256,7 +256,7 @@
 </div>
 
 <script>
-    const baseUrl = '<?= base_url() ?>';
+    const baseUrl = '<?= base_url() ?>/';
     let toastTimer = null;
 
     function showToast(title, desc, isError = false) {
