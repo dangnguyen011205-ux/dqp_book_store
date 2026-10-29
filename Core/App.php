@@ -102,6 +102,7 @@ class App {
         'admin/ma-giam-gia'                 => ['AdminCouponController', 'index'],
         'quan-ly-chuong-trinh-khuyen-mai'   => ['AdminCouponController', 'index'],
         'admin/ma-giam-gia/them'            => ['AdminCouponController', 'create'],
+        'admin/ma-giam-gia/chi-tiet/(\d+)'  => ['AdminCouponController', 'detail'],
         'admin/ma-giam-gia/sua/(\d+)'       => ['AdminCouponController', 'edit'],
         'admin/ma-giam-gia/xoa/(\d+)'       => ['AdminCouponController', 'delete'],
 

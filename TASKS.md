@@ -133,5 +133,11 @@
   - [x] Phân hệ Tác Giả (`admin/tac-gia`): 3 Bento KPI cards, tìm kiếm, avatar chữ cái, Modal thêm/sửa `#authorModal`, xóa an toàn chặn vi phạm khi đang có sách.
   - [x] Phân hệ Nhà Xuất Bản (`admin/nha-xuat-ban`): 3 Bento KPI cards, tìm kiếm, thông tin địa chỉ & liên hệ, Modal thêm/sửa `#publisherModal`, xóa an toàn chặn vi phạm khi đang có sách.
   - [x] Kiểm thử tích hợp tự động 36/36 Passed (`scratch/test_admin_metadata.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent.
-- [ ] CRUD Mã Giảm Giá (`ma_giam_gia`): Thêm mã mới, cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng, vô hiệu hóa.
+- [x] CRUD Quản Lý Mã Giảm Giá (`ma_giam_gia`) (Hoàn thành 100%):
+  - [x] 4 Bento KPI Cards: Tổng số voucher, Đang hiệu lực, Hết hạn / Hết lượt, Tổng lượt đã dùng & Tổng tiền đã tiết kiệm cho khách.
+  - [x] Bộ lọc linh hoạt: Tìm kiếm mã voucher tức thì, lọc theo loại giảm giá (`phan_tram`, `tien_mat`), lọc trạng thái hiệu lực (`con_han`, `chua_bat_dau`, `het_han`, `het_luot`).
+  - [x] Bảng dữ liệu voucher: Thẻ mã phong cách vé voucher, loại & mức giảm badge, đơn hàng tối thiểu, khoảng thời gian hiệu lực, thanh tiến trình lượt dùng (progress bar), badge trạng thái hoạt động/hết hạn.
+  - [x] Modal Thêm / Chỉnh Sửa `#couponModal`: Hỗ trợ tự động chuyển đổi đơn vị (%) và (VNĐ), validation chặt chẽ (mã in hoa, hạn dùng, giá trị > 0), nạp dữ liệu AJAX JSON qua `admin/ma-giam-gia/chi-tiet/{id}`.
+  - [x] Xóa voucher an toàn kèm cảnh báo số đơn hàng cũ đã từng sử dụng.
+  - [x] Kiểm thử tích hợp tự động 44/44 Passed (`scratch/test_admin_coupons.php`) và kiểm thử HTTP Endpoints.
 - [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).

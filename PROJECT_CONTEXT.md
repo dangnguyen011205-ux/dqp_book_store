@@ -2,7 +2,7 @@
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Kiến trúc:** PHP 8.x Thuần (OOP, MVC Pattern, PDO Prepared Statements)  
 > **Design System:** Athenaeum Modern (Thư Viện Tinh Hoa Cổ Điển Hiện Đại v2.4)  
-> **Phiên bản cập nhật:** 4.5.0 (Hoàn thành 5/7 Nhiệm vụ Giai đoạn 4: Admin Portal)  
+> **Phiên bản cập nhật:** 4.6.0 (Hoàn thành 6/7 Nhiệm vụ Giai đoạn 4: Admin Portal)  
 > **Ngày cập nhật:** 27/10/2026  
 
 ---
