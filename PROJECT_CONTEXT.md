@@ -2,8 +2,8 @@
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
 > **Kiến trúc:** PHP 8.x Thuần (OOP, MVC Pattern, PDO Prepared Statements)  
 > **Design System:** Athenaeum Modern (Thư Viện Tinh Hoa Cổ Điển Hiện Đại v2.4)  
-> **Phiên bản cập nhật:** 4.6.0 (Hoàn thành 6/7 Nhiệm vụ Giai đoạn 4: Admin Portal)  
-> **Ngày cập nhật:** 27/10/2026  
+> **Phiên bản cập nhật:** 4.7.0 (Hoàn thành 100% Giai đoạn 4: Admin Portal - 7/7 Nhiệm vụ)  
+> **Ngày cập nhật:** 31/10/2026  
 
 ---
 
@@ -90,7 +90,9 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │   ├── AdminReviewController.php # Kiểm duyệt đánh giá: bộ lọc sao, tabs trạng thái, floating bulk toolbar
 │   ├── AdminCategoryController.php # Quản lý thể loại sách: modal thêm/sửa, xóa an toàn kiểm tra sách
 │   ├── AdminAuthorController.php # Quản lý tác giả: modal thêm/sửa, xóa an toàn kiểm tra sách
-│   └── AdminPublisherController.php # Quản lý nhà xuất bản: modal thêm/sửa, xóa an toàn kiểm tra sách
+│   ├── AdminPublisherController.php # Quản lý nhà xuất bản: modal thêm/sửa, xóa an toàn kiểm tra sách
+│   ├── AdminCouponController.php    # Quản lý mã giảm giá: bento KPI, modal thêm/sửa, nạp AJAX JSON
+│   └── AdminUserController.php      # Quản lý người dùng: bento KPI, phân quyền, khóa/mở khóa tài khoản an toàn
 │
 ├── Models/
 │   ├── User.php                  # Tương tác bảng nguoi_dung
@@ -138,8 +140,12 @@ c:\xampp\htdocs\PHP_nang_cao\book_store_online\
 │       │   └── index.php         # Quản lý thể loại sách: sub-nav, bento KPI, modal thêm/sửa, safe delete
 │       ├── authors/
 │       │   └── index.php         # Quản lý tác giả: sub-nav, bento KPI, modal thêm/sửa, avatar, safe delete
-│       └── publishers/
-│           └── index.php         # Quản lý nhà xuất bản: sub-nav, bento KPI, modal thêm/sửa, safe delete
+│       ├── publishers/
+│       │   └── index.php         # Quản lý nhà xuất bản: sub-nav, bento KPI, modal thêm/sửa, safe delete
+│       ├── coupons/
+│       │   └── index.php         # Quản lý mã giảm giá: bento KPI, bộ lọc, modal thêm/sửa voucher
+│       └── users/
+│           └── index.php         # Quản lý người dùng & phân quyền: 4 bento KPI, modal hồ sơ & sửa thông tin
 │
 ├── Public/
 │   ├── css/
@@ -256,4 +262,10 @@ php scratch/test_admin_reviews.php
 
 # 6. Kiểm thử tích hợp CRUD Metadata Thể loại, Tác giả, NXB (36 test cases)
 php scratch/test_admin_metadata.php
+
+# 7. Kiểm thử tích hợp Quản lý Mã Giảm Giá (44 test cases)
+php scratch/test_admin_coupons.php
+
+# 8. Kiểm thử tích hợp Quản lý Người Dùng & Phân Quyền (62 test cases)
+php scratch/test_admin_users.php
 ```

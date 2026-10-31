@@ -1,7 +1,7 @@
 # DANH SÁCH NHIỆM VỤ DỰ ÁN (PROJECT TASKS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
-> **Cập nhật:** Hoàn thành 100% Giai đoạn 1, 2, 3 / Sẵn sàng triển khai Giai đoạn 4 (Admin Portal)  
-> **Thời điểm cập nhật:** 26/10/2026  
+> **Cập nhật:** Hoàn thành 100% Giai đoạn 1, 2, 3, 4 (Client & Admin Portal)  
+> **Thời điểm cập nhật:** 31/10/2026  
 
 ---
 
@@ -140,4 +140,12 @@
   - [x] Modal Thêm / Chỉnh Sửa `#couponModal`: Hỗ trợ tự động chuyển đổi đơn vị (%) và (VNĐ), validation chặt chẽ (mã in hoa, hạn dùng, giá trị > 0), nạp dữ liệu AJAX JSON qua `admin/ma-giam-gia/chi-tiet/{id}`.
   - [x] Xóa voucher an toàn kèm cảnh báo số đơn hàng cũ đã từng sử dụng.
   - [x] Kiểm thử tích hợp tự động 44/44 Passed (`scratch/test_admin_coupons.php`) và kiểm thử HTTP Endpoints.
-- [ ] Quản lý Người dùng (`nguoi_dung`): Danh sách tài khoản, lọc theo vai trò/trạng thái, phân quyền Admin/Khách hàng, Khóa / Mở khóa tài khoản (chặn Admin tự khóa chính mình).
+- [x] Quản lý Người dùng & Phân quyền (`nguoi_dung`) (Hoàn thành 100%):
+  - [x] 4 Bento KPI Cards: Tổng số người dùng, Khách hàng độc giả, Ban quản trị, Tài khoản đang bị khóa.
+  - [x] Bộ lọc linh hoạt: Tìm kiếm họ tên, email, số điện thoại; lọc theo vai trò (`tat_ca`, `khach_hang`, `quan_tri`), lọc theo trạng thái (`tat_ca`, `hoat_dong`, `khoa`).
+  - [x] Bảng dữ liệu người dùng: Avatar chữ cái, thông tin liên hệ, thống kê số đơn hàng & tổng chi tiêu, badge vai trò, badge trạng thái.
+  - [x] Phân quyền Quản Trị Viên / Khách Hàng thời gian thực qua AJAX.
+  - [x] Khóa / Mở khóa tài khoản tức thì, đồng bộ thu hồi session ngay lập tức khi bị khóa.
+  - [x] Ràng buộc bảo mật tối cao: Chặn quản trị viên tự khóa tài khoản của chính mình và chặn tự hạ quyền quản trị.
+  - [x] Modal Thêm mới tài khoản `#addUserModal` (kiểm tra email duy nhất, băm mật khẩu Bcrypt, gán quyền Admin/Khách hàng), Modal xem chi tiết `#userDetailModal` (hồ sơ, địa chỉ, đơn hàng gần nhất) và Modal sửa thông tin `#userEditModal`.
+  - [x] Kiểm thử tích hợp tự động 74/74 Passed (`scratch/test_admin_users.php`) và kiểm thử HTTP Endpoints.

@@ -1,7 +1,7 @@
 # BÁO CÁO TIẾN ĐỘ DỰ ÁN (PROJECT PROGRESS)
 > **Dự án:** Website Bán Sách Trực Tuyến - DQP Book Store  
-> **Cập nhật:** Hoàn thành 100% Giai đoạn 3 / Sẵn sàng bước vào Giai đoạn 4 (Admin Portal)  
-> **Thời điểm cập nhật:** 26/10/2026  
+> **Cập nhật:** Hoàn thành 100% Giai đoạn 1, 2, 3, 4 (Client & Admin Portal)  
+> **Thời điểm cập nhật:** 31/10/2026  
 
 ---
 
@@ -73,6 +73,7 @@
 | **Quản Lý & Duyệt Đánh Giá (Review Moderation)** | `Controllers/AdminReviewController.php`, `Models/Review.php`, `Views/admin/reviews/index.php` | Hoàn thành | - 4 Bento KPI cards (Đánh giá Chờ Duyệt & cảnh báo duyệt gấp, Đang Hiển Thị & tỷ lệ công khai, Điểm Toàn Sàn 5 sao & tỷ lệ hài lòng 4-5 sao, Đã Ẩn / Vi Phạm).<br>- Tabs trạng thái 4 mục (`tat_ca`, `cho_duyet`, `hien_thi`, `an`) kèm counter badges.<br>- Bộ lọc sao (Tất cả, 5★, 4★, 3★, 2★, 1★), tìm kiếm tức thì theo độc giả, email, sách, nội dung; sắp xếp linh hoạt.<br>- Floating Bulk Toolbar `#bulkToolbar`: Thao tác hàng loạt (Duyệt hiển thị, Ẩn đánh giá, Xóa vĩnh viễn) cho nhiều bản ghi cùng lúc.<br>- Bảng dữ liệu: Avatar initials, badge "Đã mua hàng", bìa sách, sao vàng, nội dung nhận xét, nút thao tác duyệt/ẩn/xóa.<br>- Phản hồi AJAX tức thì kèm Toast notification `#statusToast`.<br>- Kiểm thử tự động 35/35 Passed (`scratch/test_admin_reviews.php`) và kiểm thử trực quan Browser Subagent. |
 | **Quản Lý Thể Loại, Tác Giả & Nhà Xuất Bản (Metadata Management)** | `Controllers/AdminCategoryController.php`, `Controllers/AdminAuthorController.php`, `Controllers/AdminPublisherController.php`, `Models/Category.php`, `Models/Author.php`, `Models/Publisher.php`, `Views/admin/categories/`, `Views/admin/authors/`, `Views/admin/publishers/` | Hoàn thành | - Thanh Sub-navigation tabs chuyển đổi mượt mà 3 phân hệ Metadata (`admin/the-loai`, `admin/tac-gia`, `admin/nha-xuat-ban`) kèm counter badges.<br>- **Phân hệ Thể Loại Sách (`admin/the-loai`)**: 3 Bento KPI cards, tìm kiếm, Modal thêm/sửa `#categoryModal`, xóa an toàn chặn vi phạm ràng buộc toàn vẹn khi đang có sách liên kết.<br>- **Phân hệ Tác Giả (`admin/tac-gia`)**: 3 Bento KPI cards, tìm kiếm, avatar chữ cái, Modal thêm/sửa `#authorModal`, xóa an toàn chặn vi phạm khi đang có sách.<br>- **Phân hệ Nhà Xuất Bản (`admin/nha-xuat-ban`)**: 3 Bento KPI cards, tìm kiếm, thông tin địa chỉ & liên hệ, Modal thêm/sửa `#publisherModal`, xóa an toàn chặn vi phạm khi đang có sách.<br>- Kiểm thử tự động 36/36 Passed (`scratch/test_admin_metadata.php`) và kiểm thử trực quan trình duyệt qua Browser Subagent. |
 | **Quản Lý Mã Giảm Giá (Coupon Management)** | `Controllers/AdminCouponController.php`, `Models/Coupon.php`, `Views/admin/coupons/index.php` | Hoàn thành | - 4 Bento KPI Cards: Tổng voucher, Đang hiệu lực, Hết hạn / Hết lượt, Tổng lượt dùng & Tiền tiết kiệm cho khách.<br>- Bộ lọc đa tiêu chí: Từ khóa mã voucher, Loại giảm (`phan_tram`/`tien_mat`), Trạng thái (`con_han`/`chua_bat_dau`/`het_han`/`het_luot`).<br>- Modal thêm/sửa voucher `#couponModal`: Hỗ trợ tự động đổi đơn vị và giới hạn %, validation chặt chẽ, nạp dữ liệu qua AJAX JSON `admin/ma-giam-gia/chi-tiet/{id}`.<br>- Xóa voucher an toàn kèm cảnh báo số đơn hàng cũ đã sử dụng.<br>- Kiểm thử tự động 44/44 Passed (`scratch/test_admin_coupons.php`) và kiểm thử HTTP Endpoints. |
+| **Quản Lý Người Dùng & Phân Quyền (User & Role Management)** | `Controllers/AdminUserController.php`, `Models/User.php`, `Views/admin/users/index.php` | Hoàn thành | - 4 Bento KPI Cards: Tổng người dùng, Khách hàng, Ban quản trị, Tài khoản đang khóa.<br>- Bộ lọc từ khóa, lọc theo vai trò (`khach_hang`/`quan_tri`) và trạng thái (`hoat_dong`/`khoa`).<br>- Bảng dữ liệu hiển thị avatar, email, SĐT, số đơn đã đặt, tổng chi tiêu tích lũy, badge vai trò và trạng thái.<br>- Modal `#addUserModal` thêm mới tài khoản (chặn trùng email, băm Bcrypt, gán quyền Admin/Khách).<br>- Chức năng phân quyền Admin/Khách hàng và Khóa/Mở khóa tài khoản thời gian thực qua AJAX.<br>- Ràng buộc bảo mật tuyệt đối: Chặn Admin tự khóa hoặc tự hạ quyền tài khoản của chính mình.<br>- Modal `#userDetailModal` xem hồ sơ, địa chỉ, đơn hàng gần nhất và Modal `#userEditModal` sửa thông tin/mật khẩu.<br>- Kiểm thử tự động 74/74 Passed (`scratch/test_admin_users.php`) và kiểm thử HTTP Endpoints. |
 
 ---
 
@@ -106,13 +107,15 @@
 
 ---
 
-## 4. NHỮNG VIỆC CHƯA HOÀN THÀNH (GIAI ĐOẠN 4 - ADMIN PORTAL)
+## 4. TIẾN ĐỘ TỔNG THỂ & HẠNG MỤC MỞ RỘNG
+- **Toàn bộ 7/7 Nhiệm vụ của Giai đoạn 4 (Admin Portal)** đã hoàn thành 100% (Dashboard, Sách & Kho, Đơn hàng, Duyệt đánh giá, Metadata Thể loại/Tác giả/NXB, Mã giảm giá, Người dùng & Phân quyền).
+- **Hạng mục mở rộng:** Kiểm thử sandbox tích hợp trực tiếp với cổng thanh toán VNPAY Online production khi đưa vào khai thác thương mại.
 
-### Giai đoạn 4: Toàn Bộ Phân Hệ Quản Trị (Admin Portal)
-- **Nhiệm vụ 6: CRUD Mã Giảm Giá (`ma_giam_gia`):**
-  - Thêm, sửa, xóa, vô hiệu hóa mã giảm giá (`ma_giam_gia`), cấu hình phần trăm / tiền mặt, thời gian áp dụng, giới hạn lượt dùng.
-- **Nhiệm vụ 7: Quản Lý Người Dùng & Phân Quyền (`nguoi_dung`):**
-  - Quản lý danh sách người dùng (`nguoi_dung`): Lọc vai trò (`admin`/`khach_hang`), trạng thái (`hoat_dong`/`khoa`), khóa / mở khóa tài khoản (chặn Admin tự khóa chính mình).
+
+
+
+
+
 
 ---
 
