@@ -7,6 +7,7 @@ use Models\Cart;
 use Models\Coupon;
 use Models\Order;
 use Models\Address;
+use Core\Vnpay;
 
 class CheckoutController extends Controller {
     protected Cart $cartModel;
@@ -195,7 +196,14 @@ class CheckoutController extends Controller {
             if ($result['success']) {
                 unset($_SESSION['applied_coupon']);
                 flash('success', 'Đặt hàng thành công! Cảm ơn bạn đã lựa chọn DQP Book Store.');
-                redirect('thanh-toan/thanh-cong/' . $result['order_id']);
+                $orderId = (int)$result['order_id'];
+                if ($paymentMethod === 'VNPAY') {
+                    $orderInfo = "Thanh toan don hang #BK-{$orderId} tai " . APP_NAME;
+                    $vnpayUrl = Vnpay::createPaymentUrl($orderId, $grandTotal, $orderInfo);
+                    header('Location: ' . $vnpayUrl);
+                    exit;
+                }
+                redirect('thanh-toan/thanh-cong/' . $orderId);
             } else {
                 flash('error', $result['message']);
                 redirect('thanh-toan');
@@ -223,5 +231,174 @@ class CheckoutController extends Controller {
             'title' => 'Đặt Hàng Thành Công | ' . APP_NAME,
             'order' => $order
         ]);
+    }
+
+    /**
+     * Xử lý kết quả trả về từ Cổng thanh toán VNPAY (VNPAY Return URL)
+     */
+    public function vnpayReturn(): void {
+        $queryParams = $_GET;
+        $verify = Vnpay::verifyResponse($queryParams);
+
+        $orderId = (int)$verify['order_id'];
+        $order = null;
+        if ($orderId > 0) {
+            $order = $this->orderModel->getOrderDetail($orderId);
+        }
+
+        $isValid = $verify['is_valid'];
+        $isSuccess = false;
+        $message = '';
+
+        if (!$isValid) {
+            $message = 'Chữ ký số không hợp lệ hoặc dữ liệu phản hồi đã bị thay đổi.';
+            if ($orderId > 0) {
+                $this->orderModel->updatePaymentStatus(
+                    $orderId, 
+                    'that_bai', 
+                    $verify['transaction_no'] ?: null, 
+                    'Xác thực chữ ký số VNPAY Return thất bại'
+                );
+            }
+        } else {
+            $responseCode = $verify['response_code'];
+            $message = Vnpay::getResponseMessage($responseCode);
+
+            if ($responseCode === '00') {
+                $isSuccess = true;
+                if ($orderId > 0) {
+                    $this->orderModel->updatePaymentStatus(
+                        $orderId, 
+                        'thanh_cong', 
+                        $verify['transaction_no'] ?: null, 
+                        'Thanh toán trực tuyến thành công qua VNPAY (Ngân hàng: ' . ($verify['bank_code'] ?? 'N/A') . ')'
+                    );
+                }
+            } else {
+                $isSuccess = false;
+                if ($orderId > 0) {
+                    $this->orderModel->updatePaymentStatus(
+                        $orderId, 
+                        'that_bai', 
+                        $verify['transaction_no'] ?: null, 
+                        'Giao dịch VNPAY không thành công: ' . $message
+                    );
+                }
+            }
+        }
+
+        // Tải lại chi tiết đơn hàng sau khi cập nhật trạng thái thanh toán
+        if ($orderId > 0) {
+            $order = $this->orderModel->getOrderDetail($orderId);
+        }
+
+        $this->view('client.vnpay_result', [
+            'title'     => ($isSuccess ? 'Thanh Toán Thành Công' : 'Thanh Toán Không Thành Công') . ' | ' . APP_NAME,
+            'isSuccess' => $isSuccess,
+            'message'   => $message,
+            'verify'    => $verify,
+            'order'     => $order
+        ]);
+    }
+
+    /**
+     * Xử lý Instant Payment Notification (IPN ngầm giữa server VNPAY và Bookstore)
+     */
+    public function vnpayIpn(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $queryParams = $_GET;
+        $verify = Vnpay::verifyResponse($queryParams);
+
+        if (!$verify['is_valid']) {
+            echo json_encode([
+                'RspCode' => '97',
+                'Message' => 'Invalid signature'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $orderId = (int)$verify['order_id'];
+        $order = $this->orderModel->getOrderDetail($orderId);
+
+        if (!$order) {
+            echo json_encode([
+                'RspCode' => '01',
+                'Message' => 'Order not found'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Kiểm tra số tiền có khớp không (cho phép chênh lệch làm tròn <= 1 đồng)
+        $expectedAmount = (float)$order['tong_thanh_toan'];
+        $receivedAmount = (float)$verify['amount'];
+        if (abs($expectedAmount - $receivedAmount) > 1.0) {
+            echo json_encode([
+                'RspCode' => '04',
+                'Message' => 'Invalid amount'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Kiểm tra xem đơn hàng đã được xác nhận thanh toán trước đó chưa
+        $payment = $this->orderModel->getPaymentByOrderId($orderId);
+        if ($payment && $payment['trang_thai'] === 'thanh_cong') {
+            echo json_encode([
+                'RspCode' => '02',
+                'Message' => 'Order already confirmed'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Cập nhật trạng thái thanh toán theo mã phản hồi
+        if ($verify['response_code'] === '00') {
+            $this->orderModel->updatePaymentStatus(
+                $orderId,
+                'thanh_cong',
+                $verify['transaction_no'] ?: null,
+                'VNPAY IPN: Xác nhận thanh toán thành công qua ngân hàng ' . ($verify['bank_code'] ?? 'N/A')
+            );
+        } else {
+            $this->orderModel->updatePaymentStatus(
+                $orderId,
+                'that_bai',
+                $verify['transaction_no'] ?: null,
+                'VNPAY IPN: Giao dịch thất bại (Code: ' . $verify['response_code'] . ')'
+            );
+        }
+
+        echo json_encode([
+            'RspCode' => '00',
+            'Message' => 'Confirm Success'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * Cho phép khách hàng thanh toán lại đơn hàng VNPAY chưa thanh toán hoặc thất bại
+     */
+    public function vnpayRetry(string $id): void {
+        Auth::requireLogin();
+        $userId = Auth::id();
+        $orderId = (int)$id;
+
+        $order = $this->orderModel->getOrderDetail($orderId, $userId);
+        if (!$order) {
+            flash('error', 'Không tìm thấy thông tin đơn hàng để thanh toán lại.');
+            redirect('tai-khoan/don-hang');
+        }
+
+        // Đơn hàng chỉ được thanh toán lại nếu đang ở trạng thái 'cho_xac_nhan' và thanh toán chưa thành công
+        if ($order['trang_thai'] !== 'cho_xac_nhan' || $order['trang_thai_thanh_toan'] === 'thanh_cong') {
+            flash('warning', 'Đơn hàng này không thể thanh toán lại (đã xử lý hoặc đã hoàn tất thanh toán).');
+            redirect('tai-khoan/don-hang/' . $orderId);
+        }
+
+        $grandTotal = (float)$order['tong_thanh_toan'];
+        $orderInfo = "Thanh toan lai don hang #BK-{$orderId} tai " . APP_NAME;
+        $vnpayUrl = Vnpay::createPaymentUrl($orderId, $grandTotal, $orderInfo);
+
+        header('Location: ' . $vnpayUrl);
+        exit;
     }
 }

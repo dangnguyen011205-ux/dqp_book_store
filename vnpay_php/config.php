@@ -1,18 +1,17 @@
 <?php
 date_default_timezone_set('Asia/Ho_Chi_Minh');
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-  
-$vnp_TmnCode = "9Z4CKGRG"; //Mã định danh merchant kết nối (Terminal Id)
-$vnp_HashSecret = "AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL"; //Secret key
+
+$vnp_TmnCode = "9Z4CKGRG"; // Mã định danh merchant kết nối (Terminal Id) từ vnpay_email.txt
+$vnp_HashSecret = "AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL"; // Secret key từ vnpay_email.txt
 $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-$vnp_Returnurl = "http://localhost/PHP_nang_cao/MVC/index.php?controller=order&action=vnpayReturn";
+
+// Tự động nhận diện domain và return URL về Bookstore
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$vnp_Returnurl = $protocol . $host . "/PHP_nang_cao/book_store_online/thanh-toan/vnpay-return";
 $vnp_apiUrl = "http://sandbox.vnpayment.vn/merchant_webapi/merchant.html";
 $apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
-//Config input format
-//Expire
+
+// Config input format / Expire (15 phút)
 $startTime = date("YmdHis");
-$expire = date('YmdHis',strtotime('+15 minutes',strtotime($startTime)));
+$expire = date('YmdHis', strtotime('+15 minutes', strtotime($startTime)));

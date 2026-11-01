@@ -269,3 +269,22 @@ php scratch/test_admin_coupons.php
 # 8. Kiểm thử tích hợp Quản lý Người Dùng & Phân Quyền (62 test cases)
 php scratch/test_admin_users.php
 ```
+
+### Cổng Thanh Toán Trực Tuyến VNPAY Sandbox (Online Payment Gateway)
+- **Tài khoản Test Merchant (VNPAY Sandbox):**
+  - TMN Code: `9Z4CKGRG`
+  - Hash Secret: `AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL`
+  - Cổng thanh toán Sandbox URL: `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html`
+  - API URL: `https://sandbox.vnpayment.vn/merchant_webapi/api/transaction`
+  - Return URL Callback: `http://localhost/PHP_nang_cao/book_store_online/thanh-toan/vnpay-return`
+  - IPN Webhook Endpoint: `http://localhost/PHP_nang_cao/book_store_online/thanh-toan/vnpay-ipn`
+- **Thẻ ATM Test Sandbox (Ngân hàng NCB):**
+  - Số thẻ: `9704198526191432198`
+  - Tên chủ thẻ: `NGUYEN VAN A`
+  - Ngày phát hành: `07/15`
+  - Mật khẩu OTP: `123456`
+- **Kiến trúc & Lớp điều phối:**
+  - `Core\Vnpay`: Chịu trách nhiệm tạo URL thanh toán kèm chữ ký HMAC-SHA512, xác thực phản hồi (Return & IPN), và giải mã lỗi phản hồi VNPAY.
+  - `Controllers\CheckoutController`: Xử lý điều hướng khi tạo đơn VNPAY, đón Return URL (`vnpayReturn`), xử lý IPN ngầm (`vnpayIpn`), và thanh toán lại (`vnpayRetry`).
+  - `Models\Order`: Cập nhật trạng thái thanh toán và mã giao dịch (`updatePaymentStatus`), ghi log lịch sử đơn hàng.
+  - `Views/client/vnpay_result.php`: Giao diện kết quả biên lai giao dịch phong cách Athenaeum Modern.

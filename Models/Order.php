@@ -79,8 +79,8 @@ class Order extends Model {
 
             // 5. Tạo bản ghi thanh toán
             $phuongThuc = $orderData['phuong_thuc'] ?? 'COD';
-            $trangThaiThanhToan = ($phuongThuc === 'VNPAY') ? 'thanh_cong' : 'cho_thanh_toan';
-            $maGiaoDich = ($phuongThuc === 'VNPAY') ? ('VNPAY' . date('YmdHis') . rand(100, 999)) : null;
+            $trangThaiThanhToan = 'cho_thanh_toan';
+            $maGiaoDich = null;
 
             $sqlPayment = "INSERT INTO `thanh_toan` (`don_hang_id`, `phuong_thuc`, `so_tien`, `trang_thai`, `ma_giao_dich`, `ngay_thanh_toan`) 
                            VALUES (?, ?, ?, ?, ?, NOW())";
@@ -94,7 +94,7 @@ class Order extends Model {
 
             // 6. Ghi log khởi tạo tiến trình vào lich_su_don_hang
             $ghiChu = ($phuongThuc === 'VNPAY') 
-                ? "Khách hàng hoàn tất đặt đơn và thanh toán thành công qua cổng VNPAY (Mã GD: {$maGiaoDich})"
+                ? "Khách hàng khởi tạo đặt đơn qua Cổng thanh toán VNPAY (Đang chờ thanh toán)"
                 : "Khách hàng hoàn tất đặt đơn qua website (Phương thức: Thanh toán khi nhận hàng - COD)";
             
             if (!empty($orderData['ghi_chu_khach'])) {
@@ -586,5 +586,76 @@ class Order extends Model {
                 'message' => 'Lỗi cập nhật trạng thái đơn hàng: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Cập nhật trạng thái thanh toán và mã giao dịch cho đơn hàng
+     *
+     * @param int $orderId
+     * @param string $status 'cho_thanh_toan' | 'thanh_cong' | 'that_bai'
+     * @param string|null $transactionNo Mã giao dịch từ cổng thanh toán (ví dụ VNPAY)
+     * @param string|null $note Ghi chú bổ sung vào lịch sử đơn hàng
+     * @return bool
+     */
+    public function updatePaymentStatus(int $orderId, string $status, ?string $transactionNo = null, ?string $note = null): bool
+    {
+        $allowedStatuses = ['cho_thanh_toan', 'thanh_cong', 'that_bai'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            return false;
+        }
+
+        try {
+            $this->beginTransaction();
+
+            $sql = "UPDATE `thanh_toan` 
+                    SET `trang_thai` = ?, 
+                        `ma_giao_dich` = COALESCE(?, `ma_giao_dich`), 
+                        `ngay_thanh_toan` = NOW() 
+                    WHERE `don_hang_id` = ?";
+            $this->execute($sql, [$status, $transactionNo, $orderId]);
+
+            // Lấy trạng thái hiện tại của đơn hàng để ghi log lịch sử
+            $order = $this->fetchOne("SELECT `trang_thai` FROM `don_hang` WHERE `id` = ?", [$orderId]);
+            $currentOrderStatus = $order ? $order['trang_thai'] : 'cho_xac_nhan';
+
+            $statusText = [
+                'cho_thanh_toan' => 'Chờ thanh toán',
+                'thanh_cong'     => 'Thanh toán thành công',
+                'that_bai'       => 'Thanh toán thất bại'
+            ][$status] ?? $status;
+
+            $logNote = "Cổng VNPAY cập nhật: " . $statusText;
+            if ($transactionNo) {
+                $logNote .= " (Mã GD VNPAY: " . $transactionNo . ")";
+            }
+            if (!empty($note)) {
+                $logNote .= " | " . $note;
+            }
+
+            $this->execute(
+                "INSERT INTO `lich_su_don_hang` (`don_hang_id`, `trang_thai`, `ghi_chu`, `thoi_gian`) VALUES (?, ?, ?, NOW())",
+                [$orderId, $currentOrderStatus, $logNote]
+            );
+
+            $this->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->rollBack();
+            }
+            error_log("Error updatePaymentStatus: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy bản ghi thanh toán theo ID đơn hàng
+     *
+     * @param int $orderId
+     * @return array|null
+     */
+    public function getPaymentByOrderId(int $orderId): ?array
+    {
+        return $this->fetchOne("SELECT * FROM `thanh_toan` WHERE `don_hang_id` = ? ORDER BY `id` DESC LIMIT 1", [$orderId]);
     }
 }

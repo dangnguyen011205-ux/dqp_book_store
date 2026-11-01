@@ -173,6 +173,13 @@ function getOrderBookCover(?string $fileName, string $title): string {
                                 </div>
 
                                 <div class="flex items-center gap-2 flex-wrap">
+                                    <?php if ($ord['trang_thai'] === 'cho_xac_nhan' && $ord['phuong_thuc'] === 'VNPAY' && $ord['trang_thai_thanh_toan'] !== 'thanh_cong'): ?>
+                                        <a href="<?= base_url('thanh-toan/vnpay-retry/' . $ord['id']) ?>" 
+                                           class="px-4 py-2 rounded-xl text-xs font-bold text-on-secondary bg-secondary hover:bg-secondary-dim shadow-xs transition-colors flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[16px]">credit_card</span>
+                                            <span>Thanh Toán VNPAY</span>
+                                        </a>
+                                    <?php endif; ?>
                                     <!-- Nút Hủy đơn nếu còn chờ xác nhận -->
                                     <?php if ($ord['trang_thai'] === 'cho_xac_nhan'): ?>
                                         <button type="button" 

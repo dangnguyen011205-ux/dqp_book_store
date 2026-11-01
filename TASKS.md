@@ -149,3 +149,15 @@
   - [x] Ràng buộc bảo mật tối cao: Chặn quản trị viên tự khóa tài khoản của chính mình và chặn tự hạ quyền quản trị.
   - [x] Modal Thêm mới tài khoản `#addUserModal` (kiểm tra email duy nhất, băm mật khẩu Bcrypt, gán quyền Admin/Khách hàng), Modal xem chi tiết `#userDetailModal` (hồ sơ, địa chỉ, đơn hàng gần nhất) và Modal sửa thông tin `#userEditModal`.
   - [x] Kiểm thử tích hợp tự động 74/74 Passed (`scratch/test_admin_users.php`) và kiểm thử HTTP Endpoints.
+
+- [x] Tích hợp Cổng Thanh Toán Trực Tuyến VNPAY Sandbox (Hoàn thành 100%):
+  - [x] Cấu hình tham số Cổng VNPAY Sandbox (`VNP_TMN_CODE`, `VNP_HASH_SECRET`, `VNP_URL`, `VNP_API_URL`) từ tài liệu chính thức.
+  - [x] Service điều phối `Core\Vnpay`:
+    - [x] Thuật toán sinh URL chuyển hướng VNPAY chuẩn hóa chữ ký số HMAC-SHA512 (`createPaymentUrl`).
+    - [x] Thuật toán xác thực tính toàn vẹn dữ liệu phản hồi từ VNPAY (`verifyResponse`).
+    - [x] Bộ từ điển giải mã chi tiết mã phản hồi tiếng Việt (`getResponseMessage`).
+  - [x] Tích hợp luồng Đặt hàng: Chuyển hướng thanh toán VNPAY tức thì khi khách chọn VNPAY.
+  - [x] Endpoint Callback Return URL (`thanh-toan/vnpay-return`): Xác thực chữ ký số, cập nhật trạng thái thanh toán đơn hàng sang `thanh_cong` / `that_bai`, hiển thị màn hình Biên lai giao dịch Bento Grid chuẩn Athenaeum Modern.
+  - [x] Endpoint Server-to-Server Webhook IPN (`thanh-toan/vnpay-ipn`): Xác thực chữ ký, kiểm tra số tiền, cập nhật trạng thái đơn ngầm, trả mã phản hồi JSON theo chuẩn VNPAY IPN.
+  - [x] Chức năng Thử thanh toán lại (`thanh-toan/vnpay-retry/{id}`): Cho phép khách hàng thanh toán lại đơn hàng VNPAY bị gián đoạn trực tiếp từ trang quản lý đơn hàng.
+  - [x] Viết bộ kiểm thử tự động toàn diện: 23/23 Passed (`scratch/test_vnpay.php`).
