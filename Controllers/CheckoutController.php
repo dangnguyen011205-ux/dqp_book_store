@@ -198,7 +198,7 @@ class CheckoutController extends Controller {
                 flash('success', 'Đặt hàng thành công! Cảm ơn bạn đã lựa chọn DQP Book Store.');
                 $orderId = (int)$result['order_id'];
                 if ($paymentMethod === 'VNPAY') {
-                    $orderInfo = "Thanh toan don hang #BK-{$orderId} tai " . APP_NAME;
+                    $orderInfo = "Thanh toan don hang BK{$orderId} tai DQP Book Store";
                     $vnpayUrl = Vnpay::createPaymentUrl($orderId, $grandTotal, $orderInfo);
                     header('Location: ' . $vnpayUrl);
                     exit;
@@ -395,7 +395,7 @@ class CheckoutController extends Controller {
         }
 
         $grandTotal = (float)$order['tong_thanh_toan'];
-        $orderInfo = "Thanh toan lai don hang #BK-{$orderId} tai " . APP_NAME;
+        $orderInfo = "Thanh toan lai don hang BK{$orderId} tai DQP Book Store";
         $vnpayUrl = Vnpay::createPaymentUrl($orderId, $grandTotal, $orderInfo);
 
         header('Location: ' . $vnpayUrl);

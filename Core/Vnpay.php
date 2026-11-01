@@ -37,7 +37,11 @@ class Vnpay {
         $txnRef = (string)$orderId . '_' . date('His');
 
         if (empty($orderDesc)) {
-            $orderDesc = "Thanh toan don hang #BK-{$orderId} tai DQP Book Store";
+            $orderDesc = "Thanh toan don hang BK" . $orderId . " tai DQP Book Store";
+        } else {
+            // Loại bỏ ký tự đặc biệt bị VNPAY cấm (như #, -, <, >, &, ...)
+            $orderDesc = preg_replace('/[^a-zA-Z0-9\s]/', '', str_replace(['#', '-', '_', '.'], ' ', $orderDesc));
+            $orderDesc = trim(preg_replace('/\s+/', ' ', (string)$orderDesc));
         }
 
         $inputData = [
