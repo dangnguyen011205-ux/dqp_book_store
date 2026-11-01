@@ -17,8 +17,8 @@ class Vnpay {
      * @return string URL chuyển hướng VNPAY hoàn chỉnh kèm chữ ký số
      */
     public static function createPaymentUrl(int $orderId, float $amount, string $orderDesc = '', string $bankCode = '', string $language = 'vn'): string {
-        $tmnCode = defined('VNP_TMN_CODE') ? VNP_TMN_CODE : '9Z4CKGRG';
-        $hashSecret = defined('VNP_HASH_SECRET') ? VNP_HASH_SECRET : 'AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL';
+        $tmnCode = defined('VNP_TMN_CODE') ? VNP_TMN_CODE : 'JFZSZ391';
+        $hashSecret = defined('VNP_HASH_SECRET') ? VNP_HASH_SECRET : 'GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN';
         $vnpUrl = defined('VNP_URL') ? VNP_URL : 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 
         $startTime = date("YmdHis");
@@ -92,7 +92,7 @@ class Vnpay {
      * @return array Kết quả xác thực ['is_valid' => bool, 'order_id' => int, ...]
      */
     public static function verifyResponse(array $queryParams): array {
-        $hashSecret = defined('VNP_HASH_SECRET') ? VNP_HASH_SECRET : 'AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL';
+        $hashSecret = defined('VNP_HASH_SECRET') ? VNP_HASH_SECRET : 'GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN';
         $vnpSecureHash = $queryParams['vnp_SecureHash'] ?? '';
 
         $inputData = [];

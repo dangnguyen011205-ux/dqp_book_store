@@ -23,8 +23,8 @@ define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Cấu hình Cổng thanh toán VNPAY (Sandbox Test)
-define('VNP_TMN_CODE', '9Z4CKGRG');
-define('VNP_HASH_SECRET', 'AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL');
+define('VNP_TMN_CODE', 'JFZSZ391');
+define('VNP_HASH_SECRET', 'GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN');
 define('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
 define('VNP_API_URL', 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction');
 

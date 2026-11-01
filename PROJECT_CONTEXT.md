@@ -272,8 +272,8 @@ php scratch/test_admin_users.php
 
 ### Cổng Thanh Toán Trực Tuyến VNPAY Sandbox (Online Payment Gateway)
 - **Tài khoản Test Merchant (VNPAY Sandbox):**
-  - TMN Code: `9Z4CKGRG`
-  - Hash Secret: `AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL`
+  - TMN Code: `JFZSZ391`
+  - Hash Secret: `GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN`
   - Cổng thanh toán Sandbox URL: `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html`
   - API URL: `https://sandbox.vnpayment.vn/merchant_webapi/api/transaction`
   - Return URL Callback: `http://localhost/PHP_nang_cao/book_store_online/thanh-toan/vnpay-return`

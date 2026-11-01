@@ -1,8 +1,8 @@
 <?php
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-$vnp_TmnCode = "9Z4CKGRG"; // Mã định danh merchant kết nối (Terminal Id) từ vnpay_email.txt
-$vnp_HashSecret = "AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL"; // Secret key từ vnpay_email.txt
+$vnp_TmnCode = "JFZSZ391"; // Mã định danh merchant kết nối (Terminal Id) từ vnpay_email.txt
+$vnp_HashSecret = "GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN"; // Secret key từ vnpay_email.txt
 $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
 
 // Tự động nhận diện domain và return URL về Bookstore (hỗ trợ Ngrok HTTPS, Localhost & tự động theo tên thư mục)

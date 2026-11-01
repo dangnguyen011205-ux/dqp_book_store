@@ -39,8 +39,8 @@ function assertTest(string $desc, bool $condition): void {
 // TEST 1: Cấu hình hằng số VNPAY
 // ----------------------------------------------------
 echo "--- 1. Kiểm tra hằng số cấu hình VNPAY ---\n";
-assertTest("VNP_TMN_CODE đã được định nghĩa đúng (9Z4CKGRG)", defined('VNP_TMN_CODE') && VNP_TMN_CODE === '9Z4CKGRG');
-assertTest("VNP_HASH_SECRET đã được định nghĩa đúng", defined('VNP_HASH_SECRET') && VNP_HASH_SECRET === 'AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL');
+assertTest("VNP_TMN_CODE đã được định nghĩa đúng (JFZSZ391)", defined('VNP_TMN_CODE') && VNP_TMN_CODE === 'JFZSZ391');
+assertTest("VNP_HASH_SECRET đã được định nghĩa đúng", defined('VNP_HASH_SECRET') && VNP_HASH_SECRET === 'GKDZYAFIGNGIDHWTYCWPFHNCUCOIPHXN');
 assertTest("VNP_URL trỏ đúng tới cổng Sandbox", defined('VNP_URL') && VNP_URL === 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
 
 // ----------------------------------------------------
@@ -53,7 +53,7 @@ $orderDesc = "Thanh toan don hang #BK-999 tai DQP Book Store";
 $paymentUrl = Vnpay::createPaymentUrl($orderId, $amount, $orderDesc);
 
 assertTest("URL bắt đầu bằng VNP_URL sandbox", str_starts_with($paymentUrl, 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'));
-assertTest("URL chứa vnp_TmnCode=9Z4CKGRG", strpos($paymentUrl, 'vnp_TmnCode=9Z4CKGRG') !== false);
+assertTest("URL chứa vnp_TmnCode=JFZSZ391", strpos($paymentUrl, 'vnp_TmnCode=JFZSZ391') !== false);
 assertTest("URL chứa vnp_Amount=35000000 (x100)", strpos($paymentUrl, 'vnp_Amount=35000000') !== false);
 assertTest("URL chứa vnp_Command=pay", strpos($paymentUrl, 'vnp_Command=pay') !== false);
 assertTest("URL chứa vnp_CurrCode=VND", strpos($paymentUrl, 'vnp_CurrCode=VND') !== false);
