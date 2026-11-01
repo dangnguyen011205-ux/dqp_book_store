@@ -75,6 +75,7 @@ class App
         'quan-ly-don-hang' => ['AdminOrderController', 'index'],
         'admin/don-hang/chi-tiet/(\d+)' => ['AdminOrderController', 'detail'],
         'admin/don-hang/cap-nhat-trang-thai' => ['AdminOrderController', 'updateStatus'],
+        'admin/don-hang/cap-nhat-thanh-toan' => ['AdminOrderController', 'updatePayment'],
 
         'admin/danh-gia' => ['AdminReviewController', 'index'],
         'duyet-danh-gia' => ['AdminReviewController', 'index'],

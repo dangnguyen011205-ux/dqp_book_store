@@ -161,3 +161,12 @@
   - [x] Endpoint Server-to-Server Webhook IPN (`thanh-toan/vnpay-ipn`): Xác thực chữ ký, kiểm tra số tiền, cập nhật trạng thái đơn ngầm, trả mã phản hồi JSON theo chuẩn VNPAY IPN.
   - [x] Chức năng Thử thanh toán lại (`thanh-toan/vnpay-retry/{id}`): Cho phép khách hàng thanh toán lại đơn hàng VNPAY bị gián đoạn trực tiếp từ trang quản lý đơn hàng.
   - [x] Viết bộ kiểm thử tự động toàn diện: 23/23 Passed (`scratch/test_vnpay.php`).
+  - [x] Nâng cấp Lịch sử thanh toán & Đối soát VNPAY trong Trang Quản lý Đơn hàng Admin (`admin/don-hang`):
+    - [x] Hiển thị mã giao dịch VNPAY (`#ma_giao_dich`) dạng font mono nổi bật tại cột Thanh toán của bảng đơn hàng.
+    - [x] Tìm kiếm đơn hàng trực tiếp bằng Mã giao dịch VNPAY từ thanh tìm kiếm.
+    - [x] Bổ sung dropdown lọc theo Trạng thái thanh toán (`tat_ca`, `thanh_cong`, `cho_thanh_toan`, `that_bai`).
+    - [x] Bento Card "Đối Soát Thanh Toán & Giao Dịch" trong Slide-over Drawer xem chi tiết đơn:
+      - [x] Hiển thị Cổng thanh toán (Badge VNPAY/COD), Trạng thái dòng tiền, Thời gian thanh toán.
+      - [x] Hiển thị Mã giao dịch VNPAY kèm nút Sao chép nhanh (Copy to clipboard).
+      - [x] Form cập nhật trạng thái thanh toán thủ công cho Admin qua AJAX kèm ghi log tự động vào `lich_su_don_hang`.
+    - [x] Viết bộ kiểm thử tự động 13/13 Passed (`scratch/test_admin_order_payment.php`).

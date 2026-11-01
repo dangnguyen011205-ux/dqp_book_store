@@ -288,3 +288,8 @@ php scratch/test_admin_users.php
   - `Controllers\CheckoutController`: Xử lý điều hướng khi tạo đơn VNPAY, đón Return URL (`vnpayReturn`), xử lý IPN ngầm (`vnpayIpn`), và thanh toán lại (`vnpayRetry`).
   - `Models\Order`: Cập nhật trạng thái thanh toán và mã giao dịch (`updatePaymentStatus`), ghi log lịch sử đơn hàng.
   - `Views/client/vnpay_result.php`: Giao diện kết quả biên lai giao dịch phong cách Athenaeum Modern.
+
+#### Phân hệ Đối Soát & Lịch Sử Thanh Toán VNPAY Admin (`admin/don-hang`):
+- **Tìm kiếm:** Hỗ trợ tìm kiếm đơn hàng bằng mã giao dịch VNPAY (`tt.ma_giao_dich`).
+- **Bộ lọc:** Lọc theo phương thức thanh toán (`COD`, `VNPAY`) và trạng thái dòng tiền (`thanh_cong`, `cho_thanh_toan`, `that_bai`).
+- **Bento Card Đối soát trong Drawer:** Hiển thị chi tiết biên lai, cổng thanh toán, thời gian giao dịch, nút Copy mã giao dịch, và cập nhật trạng thái thanh toán thủ công qua AJAX endpoint `admin/don-hang/cap-nhat-thanh-toan`.

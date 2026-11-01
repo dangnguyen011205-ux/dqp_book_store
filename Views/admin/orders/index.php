@@ -168,7 +168,7 @@
             </div>
 
             <!-- Date range -->
-            <div class="md:col-span-4 flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">
+            <div class="md:col-span-3 flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">
                 <span class="material-symbols-outlined text-[18px] text-slate-400">calendar_today</span>
                 <div class="flex items-center gap-1.5 w-full text-xs">
                     <input name="tu_ngay" value="<?= htmlspecialchars($dateFrom) ?>" class="bg-transparent text-xs text-on-surface focus:outline-none w-full cursor-pointer" type="date" title="Từ ngày"/>
@@ -177,14 +177,25 @@
                 </div>
             </div>
 
-            <!-- Payment method -->
-            <div class="md:col-span-3 relative">
-                <select name="phuong_thuc" onchange="this.form.submit()" class="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface text-xs appearance-none focus:outline-none focus:bg-white focus:border-secondary cursor-pointer">
-                    <option value="">Thanh toán: Tất cả</option>
-                    <option value="COD" <?= $paymentMethod === 'COD' ? 'selected' : '' ?>>COD (Thanh toán nhận hàng)</option>
-                    <option value="VNPAY" <?= $paymentMethod === 'VNPAY' ? 'selected' : '' ?>>VNPAY (Cổng trực tuyến)</option>
+                        <!-- Payment method -->
+            <div class="md:col-span-2 relative">
+                <select name="phuong_thuc" onchange="this.form.submit()" class="w-full pl-3 pr-7 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface text-xs appearance-none focus:outline-none focus:bg-white focus:border-secondary cursor-pointer">
+                    <option value="">Cổng: Tất cả</option>
+                    <option value="COD" <?= $paymentMethod === 'COD' ? 'selected' : '' ?>>COD</option>
+                    <option value="VNPAY" <?= $paymentMethod === 'VNPAY' ? 'selected' : '' ?>>VNPAY</option>
                 </select>
-                <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">unfold_more</span>
+                <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">unfold_more</span>
+            </div>
+
+            <!-- Payment status -->
+            <div class="md:col-span-2 relative">
+                <select name="payment_status" onchange="this.form.submit()" class="w-full pl-3 pr-7 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface text-xs appearance-none focus:outline-none focus:bg-white focus:border-secondary cursor-pointer">
+                    <option value="">Tiền: Tất cả</option>
+                    <option value="thanh_cong" <?= ($paymentStatus ?? '') === 'thanh_cong' ? 'selected' : '' ?>>Đã thanh toán</option>
+                    <option value="cho_thanh_toan" <?= ($paymentStatus ?? '') === 'cho_thanh_toan' ? 'selected' : '' ?>>Chờ thanh toán</option>
+                    <option value="that_bai" <?= ($paymentStatus ?? '') === 'that_bai' ? 'selected' : '' ?>>Thất bại</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">unfold_more</span>
             </div>
 
             <!-- Submit button / Reset -->
@@ -297,19 +308,33 @@
                                     </span>
                                 </td>
 
-                                <!-- Thanh toán -->
-                                <td class="py-3.5 px-3 text-center whitespace-nowrap">
-                                    <div class="flex flex-col items-center gap-0.5">
-                                        <?php if ($isPaid): ?>
+                                                                <!-- Thanh toán & Mã Giao Dịch -->
+                                <td class="py-3.5 px-3 text-center whitespace-nowrap" id="order-payment-cell-<?= $ord['id'] ?>">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <?php if ($ord['trang_thai_thanh_toan'] === 'thanh_cong'): ?>
                                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                                                 <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán
+                                            </span>
+                                        <?php elseif ($ord['trang_thai_thanh_toan'] === 'that_bai'): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">
+                                                <span class="material-symbols-outlined text-[12px]">error</span> Thất bại
                                             </span>
                                         <?php else: ?>
                                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
                                                 <span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán
                                             </span>
                                         <?php endif; ?>
-                                        <span class="text-[10px] text-slate-500 font-semibold"><?= htmlspecialchars($ord['phuong_thuc']) ?></span>
+                                        
+                                        <div class="flex items-center gap-1 flex-wrap justify-center">
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded <?= $isVnPay ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-700' ?>">
+                                                <?= htmlspecialchars($ord['phuong_thuc']) ?>
+                                            </span>
+                                            <?php if (!empty($ord['ma_giao_dich'])): ?>
+                                                <span class="text-[10px] text-slate-500 font-mono tracking-tight" title="Mã GD: <?= htmlspecialchars($ord['ma_giao_dich']) ?>">
+                                                    #<?= htmlspecialchars(mb_strimwidth($ord['ma_giao_dich'], 0, 10, '..')) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -461,6 +486,55 @@
                 <div class="pt-2 border-t border-slate-200 flex justify-between items-baseline">
                     <span class="text-sm font-bold text-primary">Tổng thanh toán:</span>
                     <span class="text-xl font-black text-primary" id="drawerTotal">0đ</span>
+                </div>
+            </div>
+
+            <!-- Khối Đối soát Thanh toán & Giao dịch VNPAY / COD -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-primary uppercase tracking-wide flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[18px] text-secondary">account_balance_wallet</span>
+                        <span>Đối Soát Thanh Toán & Giao Dịch</span>
+                    </span>
+                    <span id="drawerPaymentMethodBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">VNPAY</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="p-2.5 rounded-lg bg-white border border-slate-100 flex flex-col">
+                        <span class="text-[10px] text-slate-400">Trạng thái dòng tiền:</span>
+                        <div id="drawerPaymentStatusBadge" class="mt-0.5 font-bold">---</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-white border border-slate-100 flex flex-col">
+                        <span class="text-[10px] text-slate-400">Thời gian ghi nhận:</span>
+                        <span id="drawerPaymentDate" class="mt-0.5 font-semibold text-slate-700 text-[11px]">---</span>
+                    </div>
+                </div>
+
+                <div class="p-2.5 rounded-lg bg-white border border-slate-100 flex items-center justify-between text-xs">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400">Mã giao dịch (VNPAY / Gateway):</span>
+                        <span id="drawerTransactionNo" class="font-mono font-bold text-primary tracking-wide text-xs">---</span>
+                    </div>
+                    <button type="button" id="drawerCopyTxnBtn" onclick="copyTransactionNo()" class="hidden items-center gap-1 text-[11px] font-bold text-secondary hover:text-secondary-dim px-2 py-1 rounded bg-secondary-container/30 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                        <span>Sao chép</span>
+                    </button>
+                </div>
+
+                <!-- Cập nhật trạng thái đối soát thủ công -->
+                <div class="pt-2 border-t border-slate-200/80 flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-600">Thao tác đối soát thủ công:</span>
+                    <div class="flex items-center gap-2">
+                        <select id="drawerPaymentStatusSelect" class="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-slate-200 text-xs text-on-surface focus:outline-none focus:border-secondary cursor-pointer">
+                            <option value="thanh_cong">Đã thanh toán (Thành công)</option>
+                            <option value="cho_thanh_toan">Chờ thanh toán</option>
+                            <option value="that_bai">Thanh toán thất bại</option>
+                        </select>
+                        <button type="button" onclick="submitUpdatePaymentStatus()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-xs transition-colors whitespace-nowrap flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">save</span>
+                            <span>Cập nhật</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -685,7 +759,55 @@
             discountRow.classList.remove('flex');
         }
 
-        document.getElementById('drawerPaymentMethod').textContent = (order.phuong_thuc || 'COD') + (order.trang_thai_thanh_toan === 'thanh_cong' ? ' (Đã thanh toán)' : ' (Chờ thanh toán)');
+                document.getElementById('drawerPaymentMethod').textContent = (order.phuong_thuc || 'COD') + (order.trang_thai_thanh_toan === 'thanh_cong' ? ' (Đã thanh toán)' : ' (Chờ thanh toán)');
+
+        // Đổ thông tin vào Khối Đối Soát Thanh Toán
+        const paymentMethodBadge = document.getElementById('drawerPaymentMethodBadge');
+        if (paymentMethodBadge) {
+            paymentMethodBadge.textContent = order.phuong_thuc || 'COD';
+            paymentMethodBadge.className = (order.phuong_thuc === 'VNPAY') 
+                ? "text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200"
+                : "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800";
+        }
+
+        const paymentStatusBadge = document.getElementById('drawerPaymentStatusBadge');
+        if (paymentStatusBadge) {
+            if (order.trang_thai_thanh_toan === 'thanh_cong') {
+                paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán</span>`;
+            } else if (order.trang_thai_thanh_toan === 'that_bai') {
+                paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">error</span> Thất bại</span>`;
+            } else {
+                paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán</span>`;
+            }
+        }
+
+        const paymentDateEl = document.getElementById('drawerPaymentDate');
+        if (paymentDateEl) {
+            paymentDateEl.textContent = order.ngay_thanh_toan || 'Chưa ghi nhận';
+        }
+
+        const txnNoEl = document.getElementById('drawerTransactionNo');
+        const copyBtn = document.getElementById('drawerCopyTxnBtn');
+        if (txnNoEl) {
+            if (order.ma_giao_dich) {
+                txnNoEl.textContent = order.ma_giao_dich;
+                if (copyBtn) {
+                    copyBtn.classList.remove('hidden');
+                    copyBtn.classList.add('inline-flex');
+                }
+            } else {
+                txnNoEl.textContent = "Chưa có mã giao dịch";
+                if (copyBtn) {
+                    copyBtn.classList.add('hidden');
+                    copyBtn.classList.remove('inline-flex');
+                }
+            }
+        }
+
+        const paymentStatusSelect = document.getElementById('drawerPaymentStatusSelect');
+        if (paymentStatusSelect) {
+            paymentStatusSelect.value = order.trang_thai_thanh_toan || 'cho_thanh_toan';
+        }
         document.getElementById('drawerTotal').textContent = formatMoney(order.tong_thanh_toan);
 
         // 5. Nhật ký xử lý (lich_su_don_hang timeline)
@@ -777,5 +899,74 @@
 
     function printOrder(orderId) {
         window.print();
+    }
+
+    // Sao chép Mã giao dịch VNPAY
+    function copyTransactionNo() {
+        const txn = document.getElementById('drawerTransactionNo').textContent;
+        if (txn && txn !== 'Chưa có mã giao dịch') {
+            navigator.clipboard.writeText(txn).then(() => {
+                showToast("Đã sao chép", `Mã giao dịch: ${txn}`);
+            });
+        }
+    }
+
+    // Submit cập nhật trạng thái thanh toán từ Drawer
+    function submitUpdatePaymentStatus() {
+        if (!currentDrawerOrderId) return;
+        const statusSelect = document.getElementById('drawerPaymentStatusSelect');
+        const newPaymentStatus = statusSelect.value;
+
+        fetch('<?= base_url('admin/don-hang/cap-nhat-thanh-toan') ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'order_id': currentDrawerOrderId,
+                'trang_thai_thanh_toan': newPaymentStatus,
+                'ghi_chu': 'Đối soát trạng thái từ Slide-over Drawer'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Đơn hàng #BK-${currentDrawerOrderId}`, data.message);
+                // Cập nhật lại UI trong drawer
+                const paymentStatusBadge = document.getElementById('drawerPaymentStatusBadge');
+                if (paymentStatusBadge) {
+                    if (newPaymentStatus === 'thanh_cong') {
+                        paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán</span>`;
+                    } else if (newPaymentStatus === 'that_bai') {
+                        paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">error</span> Thất bại</span>`;
+                    } else {
+                        paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán</span>`;
+                    }
+                }
+                // Cập nhật ô thanh toán trong bảng danh sách
+                const cell = document.getElementById(`order-payment-cell-${currentDrawerOrderId}`);
+                if (cell) {
+                    const badgeSpan = cell.querySelector('span');
+                    if (badgeSpan) {
+                        if (newPaymentStatus === 'thanh_cong') {
+                            badgeSpan.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold";
+                            badgeSpan.innerHTML = `<span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán`;
+                        } else if (newPaymentStatus === 'that_bai') {
+                            badgeSpan.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold";
+                            badgeSpan.innerHTML = `<span class="material-symbols-outlined text-[12px]">error</span> Thất bại`;
+                        } else {
+                            badgeSpan.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold";
+                            badgeSpan.innerHTML = `<span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán`;
+                        }
+                    }
+                }
+            } else {
+                showToast("Lỗi đối soát", data.message, true);
+            }
+        })
+        .catch(err => {
+            showToast("Lỗi kết nối", err.message, true);
+        });
     }
 </script>

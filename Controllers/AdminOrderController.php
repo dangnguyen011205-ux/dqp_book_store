@@ -19,6 +19,7 @@ class AdminOrderController extends Controller {
         $dateFrom = trim($_GET['tu_ngay'] ?? $_GET['date_from'] ?? '');
         $dateTo = trim($_GET['den_ngay'] ?? $_GET['date_to'] ?? '');
         $paymentMethod = trim($_GET['phuong_thuc'] ?? $_GET['payment_method'] ?? '');
+        $paymentStatus = trim($_GET['payment_status'] ?? $_GET['trang_thai_thanh_toan'] ?? '');
         $page = max(1, (int)($_GET['page'] ?? 1));
 
         $orderModel = new Order();
@@ -31,7 +32,8 @@ class AdminOrderController extends Controller {
             'status'         => $status,
             'date_from'      => $dateFrom,
             'date_to'        => $dateTo,
-            'payment_method' => $paymentMethod
+            'payment_method' => $paymentMethod,
+            'payment_status' => $paymentStatus
         ];
 
         $ordersData = $orderModel->getAdminOrders($filters, $page, 10);
@@ -48,7 +50,8 @@ class AdminOrderController extends Controller {
             'currentStatus' => $status,
             'dateFrom'      => $dateFrom,
             'dateTo'        => $dateTo,
-            'paymentMethod' => $paymentMethod
+            'paymentMethod' => $paymentMethod,
+            'paymentStatus' => $paymentStatus
         ], 'admin');
     }
 
@@ -134,6 +137,74 @@ class AdminOrderController extends Controller {
             set_flash('error', $result['message']);
         }
 
+        redirect('admin/don-hang');
+    }
+
+    /**
+     * Cập nhật trạng thái thanh toán và mã giao dịch (Đối soát thanh toán VNPAY/COD)
+     */
+    public function updatePayment(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/don-hang');
+        }
+
+        $input = $_POST;
+        if (empty($input) && ($json = file_get_contents('php://input'))) {
+            $input = json_decode($json, true) ?: [];
+        }
+
+        $orderId = (int)($input['order_id'] ?? 0);
+        $paymentStatus = trim($input['trang_thai_thanh_toan'] ?? '');
+        $transactionNo = trim($input['ma_giao_dich'] ?? '');
+        $note = trim($input['ghi_chu'] ?? '');
+
+        if ($orderId <= 0 || !in_array($paymentStatus, ['cho_thanh_toan', 'thanh_cong', 'that_bai'], true)) {
+            $msg = 'Thông tin cập nhật thanh toán không hợp lệ.';
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            set_flash('error', $msg);
+            redirect('admin/don-hang');
+        }
+
+        $orderModel = new Order();
+        $adminUser = Auth::user();
+        $adminName = $adminUser ? $adminUser['ho_ten'] : 'Quản trị viên';
+        $logNote = "Admin ({$adminName}) đối soát thanh toán" . ($note ? ": {$note}" : "");
+
+        $success = $orderModel->updatePaymentStatus(
+            $orderId, 
+            $paymentStatus, 
+            $transactionNo !== '' ? $transactionNo : null, 
+            $logNote
+        );
+
+        if ($success) {
+            $statusLabels = [
+                'cho_thanh_toan' => 'Chờ thanh toán',
+                'thanh_cong'     => 'Đã thanh toán',
+                'that_bai'       => 'Thanh toán thất bại'
+            ];
+            $msg = "Cập nhật thanh toán cho đơn hàng #BK-{$orderId} sang '{$statusLabels[$paymentStatus]}' thành công!";
+            $res = ['success' => true, 'message' => $msg];
+        } else {
+            $msg = 'Không thể cập nhật trạng thái thanh toán.';
+            $res = ['success' => false, 'message' => $msg];
+        }
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($res);
+            exit;
+        }
+
+        if ($res['success']) {
+            set_flash('success', $res['message']);
+        } else {
+            set_flash('error', $res['message']);
+        }
         redirect('admin/don-hang');
     }
 }

@@ -169,7 +169,7 @@ class Order extends Model {
      * Lấy chi tiết toàn diện của một đơn hàng (kèm sản phẩm, thanh toán và timeline stepper)
      */
     public function getOrderDetail(int $orderId, ?int $userId = null): ?array {
-        $sql = "SELECT dh.*, tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich, tt.ngay_thanh_toan,
+        $sql = "SELECT dh.*, tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich, tt.ngay_thanh_toan, tt.ngay_thanh_toan,
                        mgg.ma AS ma_voucher, mgg.loai AS loai_voucher, mgg.gia_tri AS gia_tri_voucher,
                        nd.ho_ten AS khach_hang_ten, nd.email AS khach_hang_email, nd.so_dien_thoai AS khach_hang_sdt
                 FROM `don_hang` dh
@@ -392,7 +392,8 @@ class Order extends Model {
             $like = '%' . $keyword . '%';
             $cleanedId = is_numeric($cleaned) ? (int)$cleaned : -1;
 
-            $where[] = "(dh.id = ? OR dh.nguoi_nhan LIKE ? OR nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR dh.dia_chi_giao LIKE ?)";
+            $where[] = "(dh.id = ? OR dh.nguoi_nhan LIKE ? OR nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR dh.dia_chi_giao LIKE ? OR tt.ma_giao_dich LIKE ?)";
+            $params[] = $like;
             $params[] = $cleanedId;
             $params[] = $like;
             $params[] = $like;
@@ -417,6 +418,12 @@ class Order extends Model {
             $params[] = $filters['payment_method'];
         }
 
+        // 5. Lọc theo trạng thái thanh toán (Đối soát giao dịch VNPAY/COD)
+        if (!empty($filters['payment_status']) && in_array($filters['payment_status'], ['cho_thanh_toan', 'thanh_cong', 'that_bai'], true)) {
+            $where[] = "tt.trang_thai = ?";
+            $params[] = $filters['payment_status'];
+        }
+
         $whereClause = implode(" AND ", $where);
 
         // Đếm tổng số đơn thỏa mãn
@@ -432,7 +439,7 @@ class Order extends Model {
 
         $sql = "SELECT dh.*, 
                        nd.ho_ten AS khach_hang_ten, nd.email AS khach_hang_email, nd.so_dien_thoai AS khach_hang_sdt,
-                       tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich,
+                       tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich, tt.ngay_thanh_toan,
                        mgg.ma AS ma_voucher,
                        COUNT(ct.id) AS tong_so_mat_hang,
                        SUM(ct.so_luong) AS tong_so_cuon
