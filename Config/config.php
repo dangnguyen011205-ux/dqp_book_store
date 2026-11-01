@@ -28,14 +28,23 @@ define('VNP_HASH_SECRET', 'AMHVTTKNIQPTBBMXOMSGEXVPRTQIUGJL');
 define('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
 define('VNP_API_URL', 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction');
 
-// Tự động nhận diện BASE_URL linh hoạt
+// Tự động nhận diện BASE_URL linh hoạt (hỗ trợ cả Localhost, Ngrok HTTPS, Reverse Proxy)
 if (!defined('BASE_URL')) {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+               || (($_SERVER['SERVER_PORT'] ?? 80) == 443)
+               || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+               || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
+    $protocol = $isHttps ? "https://" : "http://";
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
     
     // Nhận diện thư mục chạy từ SCRIPT_NAME (ví dụ: /PHP_nang_cao/book_store_online/index.php)
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-    $baseFolder = rtrim($scriptDir, '/');
+    $baseFolder = trim($scriptDir, '/');
+    if ($baseFolder === '.' || empty($baseFolder)) {
+        $baseFolder = '';
+    } else {
+        $baseFolder = '/' . $baseFolder;
+    }
     
     define('BASE_URL', $protocol . $host . $baseFolder);
 }

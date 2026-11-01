@@ -31,7 +31,7 @@ class Vnpay {
         }
 
         // Return URL callback về hệ thống Bookstore
-        $returnUrl = function_exists('base_url') ? \base_url('thanh-toan/vnpay-return') : (defined('BASE_URL') ? BASE_URL . '/thanh-toan/vnpay-return' : 'http://localhost/PHP_nang_cao/book_store_online/thanh-toan/vnpay-return');
+        $returnUrl = function_exists('base_url') ? \base_url('thanh-toan/vnpay-return') : (defined('BASE_URL') ? BASE_URL . '/thanh-toan/vnpay-return' : '/thanh-toan/vnpay-return');
 
         // Tạo mã tham chiếu giao dịch (kèm timestamp để cho phép thanh toán lại nếu lần trước thất bại)
         $txnRef = (string)$orderId . '_' . date('His');
