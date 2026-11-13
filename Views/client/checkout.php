@@ -97,10 +97,10 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
                             <?php foreach ($addresses as $index => $addr): 
                                 $isChecked = ($defaultAddress && $defaultAddress['id'] == $addr['id']) || (!$defaultAddress && $index === 0);
                             ?>
-                                <label class="relative flex items-start gap-4 p-4 rounded-xl border border-surface-container hover:border-secondary transition-all cursor-pointer <?= $isChecked ? 'bg-secondary-container/10 border-secondary ring-1 ring-secondary/30' : 'bg-surface-container-lowest' ?>">
+                                <label class="checkout-option-card relative flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer <?= $isChecked ? 'bg-secondary-container/10 border-secondary ring-1 ring-secondary/30' : 'bg-surface-container-lowest border-surface-container hover:border-secondary' ?>">
                                     <input type="radio" name="address_choice" value="existing" 
                                            <?= $isChecked ? 'checked' : '' ?> 
-                                           onchange="toggleNewAddressForm(false)"
+                                           onchange="handleAddressChange(this)"
                                            class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
                                     <input type="hidden" name="address_id" value="<?= $addr['id'] ?>" <?= $isChecked ? '' : 'disabled' ?> class="addr-id-input">
                                     
@@ -123,10 +123,11 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
                         <?php endif; ?>
 
                         <!-- Tùy chọn: Nhập địa chỉ mới -->
-                        <label class="relative flex items-start gap-4 p-4 rounded-xl border border-dashed border-surface-container hover:border-secondary transition-all cursor-pointer bg-surface-container-low/40">
+                        <?php $isNewChecked = empty($addresses); ?>
+                        <label class="checkout-option-card relative flex items-start gap-4 p-4 rounded-xl border border-dashed transition-all cursor-pointer <?= $isNewChecked ? 'bg-secondary-container/10 border-secondary ring-1 ring-secondary/30' : 'bg-surface-container-low/40 border-surface-container hover:border-secondary' ?>">
                             <input type="radio" name="address_choice" value="new" 
-                                   <?= empty($addresses) ? 'checked' : '' ?> 
-                                   onchange="toggleNewAddressForm(true)"
+                                   <?= $isNewChecked ? 'checked' : '' ?> 
+                                   onchange="handleAddressChange(this)"
                                    class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
                             <div class="flex-1">
                                 <span class="font-bold text-sm text-primary flex items-center gap-1.5">
@@ -138,7 +139,7 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
                         </label>
 
                         <!-- Form nhập địa chỉ mới (Mở ra khi chọn 'new' hoặc khi chưa có địa chỉ) -->
-                        <div id="new-address-container" class="<?= !empty($addresses) ? 'hidden' : '' ?> pt-4 mt-2 border-t border-surface-container space-y-4">
+                        <div id="new-address-container" class="<?= !$isNewChecked ? 'hidden' : '' ?> pt-4 mt-2 border-t border-surface-container space-y-4">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-on-surface mb-1">Họ tên người nhận *</label>
@@ -178,7 +179,7 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
 
                     <div class="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Giao tiêu chuẩn -->
-                        <label class="relative p-4 rounded-xl border border-secondary bg-secondary-container/10 ring-1 ring-secondary/30 cursor-pointer flex flex-col justify-between">
+                        <label class="checkout-option-card relative p-4 rounded-xl border border-secondary bg-secondary-container/10 ring-1 ring-secondary/30 cursor-pointer flex flex-col justify-between transition-all">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-3">
                                     <input type="radio" name="shipping_method" value="standard" checked 
@@ -208,7 +209,7 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
                         </label>
 
                         <!-- Giao Hỏa tốc -->
-                        <label class="relative p-4 rounded-xl border border-surface-container hover:border-secondary bg-surface-container-lowest transition-all cursor-pointer flex flex-col justify-between">
+                        <label class="checkout-option-card relative p-4 rounded-xl border border-surface-container bg-surface-container-lowest hover:border-secondary cursor-pointer flex flex-col justify-between transition-all">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-3">
                                     <input type="radio" name="shipping_method" value="express" 
@@ -249,8 +250,8 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
 
                     <div class="pt-4 space-y-3">
                         <!-- Cổng VNPAY (Khuyên dùng) -->
-                        <label class="relative flex items-start gap-4 p-4 rounded-xl border border-secondary bg-secondary-container/10 ring-1 ring-secondary/30 cursor-pointer">
-                            <input type="radio" name="payment_method" value="VNPAY" checked class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
+                        <label class="checkout-option-card relative flex items-start gap-4 p-4 rounded-xl border border-secondary bg-secondary-container/10 ring-1 ring-secondary/30 cursor-pointer transition-all">
+                            <input type="radio" name="payment_method" value="VNPAY" checked onchange="updateRadioSelection('payment_method')" class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
                             <div class="flex-1">
                                 <div class="flex items-center justify-between flex-wrap gap-2">
                                     <div class="flex items-center gap-2.5">
@@ -274,8 +275,8 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
                         </label>
 
                         <!-- Thanh toán khi nhận hàng (COD) -->
-                        <label class="relative flex items-start gap-4 p-4 rounded-xl border border-surface-container hover:border-secondary bg-surface-container-lowest transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="COD" class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
+                        <label class="checkout-option-card relative flex items-start gap-4 p-4 rounded-xl border border-surface-container bg-surface-container-lowest hover:border-secondary cursor-pointer transition-all">
+                            <input type="radio" name="payment_method" value="COD" onchange="updateRadioSelection('payment_method')" class="mt-1 w-4 h-4 text-secondary focus:ring-secondary">
                             <div class="flex-1">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2.5">
@@ -393,7 +394,49 @@ function getCheckoutBookCover(?string $fileName, string $title): string {
 const baseSubtotal = <?= (float)$subtotal ?>;
 const baseDiscount = <?= (float)$discount ?>;
 
+// Hàm tự động cập nhật viền và màu nền xanh khi người dùng tích radio button
+function updateRadioSelection(name) {
+    const radios = document.querySelectorAll(`input[name="${name}"]`);
+    radios.forEach(radio => {
+        const card = radio.closest('.checkout-option-card');
+        if (!card) return;
+
+        if (radio.checked) {
+            card.classList.add('bg-secondary-container/10', 'border-secondary', 'ring-1', 'ring-secondary/30');
+            card.classList.remove('bg-surface-container-lowest', 'bg-surface-container-low/40', 'border-surface-container');
+        } else {
+            card.classList.remove('bg-secondary-container/10', 'border-secondary', 'ring-1', 'ring-secondary/30');
+            if (radio.name === 'address_choice' && radio.value === 'new') {
+                card.classList.add('bg-surface-container-low/40', 'border-surface-container');
+            } else {
+                card.classList.add('bg-surface-container-lowest', 'border-surface-container');
+            }
+        }
+    });
+}
+
+function handleAddressChange(radioInput) {
+    updateRadioSelection('address_choice');
+    
+    const isNew = (radioInput.value === 'new');
+    const container = document.getElementById('new-address-container');
+    const addrInputs = document.querySelectorAll('.addr-id-input');
+    
+    if (isNew) {
+        container.classList.remove('hidden');
+        addrInputs.forEach(i => i.disabled = true);
+    } else {
+        container.classList.add('hidden');
+        addrInputs.forEach(i => {
+            const isCardChecked = i.closest('.checkout-option-card').querySelector('input[type="radio"]').checked;
+            i.disabled = !isCardChecked;
+        });
+    }
+}
+
 function updateShippingMethod(method) {
+    updateRadioSelection('shipping_method');
+    
     let fee = (baseSubtotal >= 250000) ? 0 : 22000;
     if (method === 'express') {
         fee = 40000;
@@ -405,17 +448,5 @@ function updateShippingMethod(method) {
         : new Intl.NumberFormat('vi-VN').format(fee) + 'đ';
         
     document.getElementById('display-grand-total').innerText = new Intl.NumberFormat('vi-VN').format(grand) + 'đ';
-}
-
-function toggleNewAddressForm(isNew) {
-    const container = document.getElementById('new-address-container');
-    const addrInputs = document.querySelectorAll('.addr-id-input');
-    if (isNew) {
-        container.classList.remove('hidden');
-        addrInputs.forEach(i => i.disabled = true);
-    } else {
-        container.classList.add('hidden');
-        addrInputs.forEach(i => i.disabled = false);
-    }
 }
 </script>
