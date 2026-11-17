@@ -21,6 +21,8 @@ $currentUrl = trim($_GET['url'] ?? '', '/');
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script id="tailwind-config">
     tailwind.config = {
         darkMode: "class",

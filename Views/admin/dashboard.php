@@ -17,6 +17,10 @@
  * @var int $totalUsers
  * @var int $lowStockCount
  * @var array $chartPoints
+ * @var string $chartRange
+ * @var array $currentChartDataset
+ * @var array $allChartDatasets
+ * @var bool $hasHistoricalOrders
  * @var array $categoryBreakdown
  * @var array $recentOrders
  * @var array $topBooks
@@ -160,80 +164,167 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         <!-- 2/3 Revenue Chart -->
         <div class="lg:col-span-2 p-6 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-base font-bold text-primary flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">analytics</span>
-                        Doanh Thu & Biến Động Đơn Hàng (Tháng 10/2026)
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Biểu đồ tiến trình doanh thu và số lượng đơn hàng ghi nhận thực tế trên hệ thống</p>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[22px]">analytics</span>
+                        <h2 class="text-base font-bold text-primary">Doanh Thu & Biến Động Đơn Hàng</h2>
+                        <span id="chartRangeBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-bold">
+                            <?= $chartRange === '7days' ? '7 Ngày Qua' : ($chartRange === '30days' ? '30 Ngày Qua' : ($chartRange === 'year' ? 'Năm ' . date('Y') : 'Mốc Có Đơn')) ?>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">Tiến trình doanh thu và số lượng đơn hàng ghi nhận thực tế từ hệ thống</p>
                 </div>
+                
+                <!-- Bộ lọc phạm vi thời gian -->
                 <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
-                    <button class="px-3 py-1 rounded-lg bg-white text-primary shadow-sm">Theo Ngày</button>
-                    <button class="px-3 py-1 rounded-lg hover:text-primary transition-colors">Theo Tuần</button>
-                    <button class="px-3 py-1 rounded-lg hover:text-primary transition-colors">Tháng 10</button>
+                    <button type="button" onclick="switchChartRange('7days')" id="btn-7days" 
+                            class="range-btn px-3 py-1.5 rounded-lg transition-all <?= $chartRange === '7days' ? 'bg-white text-primary shadow-sm font-bold' : 'hover:text-primary' ?>">
+                        7 Ngày Qua
+                    </button>
+                    <button type="button" onclick="switchChartRange('30days')" id="btn-30days" 
+                            class="range-btn px-3 py-1.5 rounded-lg transition-all <?= $chartRange === '30days' ? 'bg-white text-primary shadow-sm font-bold' : 'hover:text-primary' ?>">
+                        30 Ngày
+                    </button>
+                    <button type="button" onclick="switchChartRange('year')" id="btn-year" 
+                            class="range-btn px-3 py-1.5 rounded-lg transition-all <?= $chartRange === 'year' ? 'bg-white text-primary shadow-sm font-bold' : 'hover:text-primary' ?>">
+                        Năm <?= date('Y') ?>
+                    </button>
+                    <?php if (!empty($hasHistoricalOrders)): ?>
+                    <button type="button" onclick="switchChartRange('active')" id="btn-active" 
+                            class="range-btn px-3 py-1.5 rounded-lg transition-all <?= $chartRange === 'active' ? 'bg-white text-primary shadow-sm font-bold' : 'hover:text-primary' ?>"
+                            title="Xem các mốc phát sinh đơn hàng thực tế">
+                        Mốc Có Đơn
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- SVG Visual Area Curve -->
-            <div class="relative w-full h-64 flex flex-col justify-end">
-                <!-- Background Axis Grid Lines -->
-                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
-                    <div class="w-full h-px bg-slate-400"></div>
-                    <div class="w-full h-px bg-slate-400"></div>
-                    <div class="w-full h-px bg-slate-400"></div>
-                    <div class="w-full h-px bg-slate-400"></div>
-                </div>
-
-                <!-- SVG Graph -->
-                <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 200">
-                    <defs>
-                        <linearGradient id="revenueGlow" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stop-color="#006A61" stop-opacity="0.35"></stop>
-                            <stop offset="100%" stop-color="#006A61" stop-opacity="0.0"></stop>
-                        </linearGradient>
-                    </defs>
-
-                    <!-- Volume Bars -->
-                    <?php 
-                    $barPositions = [60, 180, 300, 420, 540, 660];
-                    foreach ($chartPoints as $i => $pt): 
-                        $x = $barPositions[$i] ?? (60 + $i * 120);
-                        $h = $pt['bar_h'];
-                        $y = 190 - $h;
-                        $color = ($i === count($chartPoints) - 1) ? '#006A61' : (($i === count($chartPoints) - 2) ? '#86F2E4' : '#E2E8F0');
-                    ?>
-                        <rect fill="<?= $color ?>" height="<?= $h ?>" opacity="0.8" rx="4" width="20" x="<?= $x ?>" y="<?= $y ?>"></rect>
-                    <?php endforeach; ?>
-
-                    <!-- SVG Fill Path -->
-                    <path d="M 60 160 C 180 145, 300 135, 420 100 C 540 75, 600 45, 660 30 L 660 190 L 60 190 Z" fill="url(#revenueGlow)"></path>
-
-                    <!-- SVG Stroke Curve -->
-                    <path d="M 60 160 C 180 145, 300 135, 420 100 C 540 75, 600 45, 660 30" fill="none" stroke="#006A61" stroke-linecap="round" stroke-width="3.5"></path>
-
-                    <!-- Milestone Dots -->
-                    <circle cx="660" cy="30" fill="#006A61" r="7" stroke="#ffffff" stroke-width="3"></circle>
-                    <circle cx="540" cy="75" fill="#86F2E4" r="5" stroke="#006A61" stroke-width="2"></circle>
-                </svg>
-
+            <!-- Vùng hiển thị Biểu đồ (Dual Mode: Chart.js Canvas + Dynamic SVG Fallback) -->
+            <div class="relative w-full h-72 flex flex-col justify-end">
                 <!-- Floating Milestone Callout Tag -->
-                <div class="absolute right-4 top-2 bg-primary text-white px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-2 z-10 border border-white/10">
+                <div id="chartCallout" class="absolute right-2 top-0 bg-primary text-white px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-2 z-10 border border-white/10 transition-all">
                     <span class="material-symbols-outlined text-[18px] text-secondary-fixed">workspace_premium</span>
                     <div class="flex flex-col text-left">
-                        <span class="text-[11px] font-bold text-secondary-fixed uppercase tracking-wider">Hôm Nay (Đỉnh Cao)</span>
-                        <span class="text-xs font-bold text-white"><?= format_currency(end($chartPoints)['rev']) ?> / 7 đơn</span>
+                        <span id="calloutTitle" class="text-[10px] font-bold text-secondary-fixed uppercase tracking-wider">
+                            <?php if (!empty($currentChartDataset['peakPoint']) && ($currentChartDataset['peakPoint']['rev'] > 0 || $currentChartDataset['peakPoint']['orders'] > 0)): ?>
+                                Mốc Cao Nhất (<?= htmlspecialchars($currentChartDataset['peakPoint']['short']) ?>)
+                            <?php else: ?>
+                                Trạng Thái Ghi Nhận
+                            <?php endif; ?>
+                        </span>
+                        <span id="calloutValue" class="text-xs font-bold text-white">
+                            <?php if (!empty($currentChartDataset['peakPoint']) && ($currentChartDataset['peakPoint']['rev'] > 0 || $currentChartDataset['peakPoint']['orders'] > 0)): ?>
+                                <?= format_currency($currentChartDataset['peakPoint']['rev']) ?> • <?= $currentChartDataset['peakPoint']['orders'] ?> đơn
+                            <?php else: ?>
+                                0đ • 0 đơn
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Interactive Canvas for Chart.js -->
+                <div id="canvasChartWrap" class="w-full h-full pt-8">
+                    <canvas id="revenueOrdersChartCanvas" class="w-full h-full"></canvas>
+                </div>
+
+                <!-- Fallback Dynamic SVG Graph (Hiển thị khi offline hoặc thư viện chưa tải) -->
+                <div id="svgChartWrap" class="hidden w-full h-full relative flex flex-col justify-end pt-8">
+                    <!-- Background Axis Grid Lines -->
+                    <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
+                        <div class="w-full h-px bg-slate-400"></div>
+                        <div class="w-full h-px bg-slate-400"></div>
+                        <div class="w-full h-px bg-slate-400"></div>
+                        <div class="w-full h-px bg-slate-400"></div>
+                    </div>
+
+                    <svg id="svgChart" class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 200">
+                        <defs>
+                            <linearGradient id="revenueGlowDynamic" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#006A61" stop-opacity="0.35"></stop>
+                                <stop offset="100%" stop-color="#006A61" stop-opacity="0.0"></stop>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Dynamic Volume Bars -->
+                        <g id="svgBars">
+                            <?php foreach ($currentChartDataset['points'] as $i => $pt): 
+                                $color = !empty($pt['milestone']) ? '#006A61' : (!empty($pt['is_today']) ? '#86F2E4' : '#E2E8F0');
+                                $yBar = 180 - $pt['bar_h'];
+                            ?>
+                                <rect x="<?= $pt['x'] - 10 ?>" y="<?= $yBar ?>" width="20" height="<?= $pt['bar_h'] ?>" rx="4" fill="<?= $color ?>" opacity="0.85">
+                                    <title><?= htmlspecialchars($pt['label']) ?>: <?= format_currency($pt['rev']) ?> (<?= $pt['orders'] ?> đơn)</title>
+                                </rect>
+                            <?php endforeach; ?>
+                        </g>
+
+                        <!-- Dynamic Area Fill Path -->
+                        <path id="svgAreaPath" d="<?= $currentChartDataset['svgAreaPath'] ?>" fill="url(#revenueGlowDynamic)"></path>
+
+                        <!-- Dynamic Line Stroke Curve -->
+                        <path id="svgLinePath" d="<?= $currentChartDataset['svgPath'] ?>" fill="none" stroke="#006A61" stroke-linecap="round" stroke-width="3.5"></path>
+
+                        <!-- Dynamic Milestone Dots -->
+                        <g id="svgDots">
+                            <?php foreach ($currentChartDataset['points'] as $pt): ?>
+                                <?php if (!empty($pt['milestone'])): ?>
+                                    <circle cx="<?= $pt['x'] ?>" cy="<?= $pt['y'] ?>" r="6.5" fill="#006A61" stroke="#ffffff" stroke-width="2.5">
+                                        <title><?= htmlspecialchars($pt['label']) ?> (Đỉnh cao): <?= format_currency($pt['rev']) ?></title>
+                                    </circle>
+                                <?php elseif (!empty($pt['is_today'])): ?>
+                                    <circle cx="<?= $pt['x'] ?>" cy="<?= $pt['y'] ?>" r="5" fill="#86F2E4" stroke="#006A61" stroke-width="2">
+                                        <title><?= htmlspecialchars($pt['label']) ?>: <?= format_currency($pt['rev']) ?></title>
+                                    </circle>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </g>
+                    </svg>
+
+                    <!-- X-Axis Labels (Fallback SVG) -->
+                    <div id="svgXLabels" class="flex items-center justify-between pt-3 text-xs font-semibold text-slate-500 border-t border-slate-100 mt-2">
+                        <?php foreach ($currentChartDataset['points'] as $pt): ?>
+                            <span class="<?= !empty($pt['milestone']) ? 'text-secondary font-bold' : '' ?>">
+                                <?= htmlspecialchars($pt['short']) ?>
+                            </span>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
 
-            <!-- X-Axis Labels -->
-            <div class="flex items-center justify-between pt-3 text-xs font-semibold text-slate-500 border-t border-slate-100 mt-2">
-                <?php foreach ($chartPoints as $pt): ?>
-                    <span class="<?= !empty($pt['milestone']) ? 'text-secondary font-bold' : '' ?>">
-                        <?= htmlspecialchars($pt['label']) ?>
+            <!-- Bottom Summary Stats Bar -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100 mt-3 text-xs">
+                <div class="flex flex-col">
+                    <span class="text-slate-400 font-medium">Doanh thu kỳ này</span>
+                    <span id="summaryPeriodRev" class="font-extrabold text-primary text-sm mt-0.5">
+                        <?= format_currency(array_sum(array_column($currentChartDataset['points'], 'rev'))) ?>
                     </span>
-                <?php endforeach; ?>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-slate-400 font-medium">Tổng đơn hợp lệ</span>
+                    <span id="summaryPeriodOrders" class="font-extrabold text-primary text-sm mt-0.5">
+                        <?= number_format(array_sum(array_column($currentChartDataset['points'], 'orders'))) ?> đơn
+                    </span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-slate-400 font-medium">Giá trị TB/Đơn (AOV)</span>
+                    <span id="summaryPeriodAov" class="font-extrabold text-secondary text-sm mt-0.5">
+                        <?php
+                        $sumRev = array_sum(array_column($currentChartDataset['points'], 'rev'));
+                        $sumOrders = array_sum(array_column($currentChartDataset['points'], 'orders'));
+                        echo format_currency($sumOrders > 0 ? ($sumRev / $sumOrders) : 0);
+                        ?>
+                    </span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-slate-400 font-medium">Mốc cao nhất kỳ</span>
+                    <span id="summaryPeriodPeak" class="font-bold text-slate-700 text-xs mt-0.5 truncate">
+                        <?php if (!empty($currentChartDataset['peakPoint']) && ($currentChartDataset['peakPoint']['rev'] > 0 || $currentChartDataset['peakPoint']['orders'] > 0)): ?>
+                            <?= htmlspecialchars($currentChartDataset['peakPoint']['short']) ?>: <?= format_currency($currentChartDataset['peakPoint']['rev']) ?>
+                        <?php else: ?>
+                            Chưa có đơn
+                        <?php endif; ?>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -534,3 +625,288 @@
         </div>
     </div>
 </div>
+
+<script>
+// Dữ liệu doanh số & đơn hàng thực tế từ CSDL
+const chartDatasets = <?= json_encode($allChartDatasets, JSON_UNESCAPED_UNICODE) ?>;
+let currentRange = '<?= $chartRange ?>';
+let chartInstance = null;
+
+function formatCurrencyJs(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+}
+
+function initChart() {
+    const canvas = document.getElementById('revenueOrdersChartCanvas');
+    if (!canvas) return;
+
+    // Kiểm tra nếu thư viện Chart.js chưa tải được (offline fallback sang SVG động)
+    if (typeof Chart === 'undefined') {
+        const canvasWrap = document.getElementById('canvasChartWrap');
+        const svgWrap = document.getElementById('svgChartWrap');
+        if (canvasWrap) canvasWrap.classList.add('hidden');
+        if (svgWrap) {
+            svgWrap.classList.remove('hidden');
+            svgWrap.classList.add('flex');
+        }
+        return;
+    }
+
+    const dataObj = chartDatasets[currentRange] || chartDatasets['7days'] || { points: [] };
+    const points = dataObj.points || [];
+
+    const labels = points.map(p => p.short || p.label);
+    const revenues = points.map(p => p.rev);
+    const orders = points.map(p => p.orders);
+
+    const ctx = canvas.getContext('2d');
+
+    // Gradient nền cho đường cong doanh số
+    const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(0, 106, 97, 0.28)');
+    gradient.addColorStop(0.7, 'rgba(0, 106, 97, 0.05)');
+    gradient.addColorStop(1, 'rgba(0, 106, 97, 0.00)');
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Doanh thu thực tế (VNĐ)',
+                    data: revenues,
+                    borderColor: '#006A61',
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: points.map(p => p.milestone ? '#006A61' : '#ffffff'),
+                    pointBorderColor: '#006A61',
+                    pointBorderWidth: 2,
+                    pointRadius: points.map(p => p.milestone ? 6 : (p.is_today ? 5 : 3.5)),
+                    pointHoverRadius: 7,
+                    yAxisID: 'yRev',
+                    order: 1
+                },
+                {
+                    type: 'bar',
+                    label: 'Số lượng đơn hàng',
+                    data: orders,
+                    backgroundColor: points.map(p => p.milestone ? '#006A61' : (p.is_today ? '#86F2E4' : '#CBD5E1')),
+                    hoverBackgroundColor: '#0F2942',
+                    borderRadius: 5,
+                    barPercentage: 0.45,
+                    categoryPercentage: 0.7,
+                    yAxisID: 'yOrders',
+                    order: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        usePointStyle: true,
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                        color: '#475569'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#001428',
+                    titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+                    bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+                    padding: 12,
+                    cornerRadius: 10,
+                    callbacks: {
+                        title: function(items) {
+                            if (!items || !items.length) return '';
+                            const idx = items[0].dataIndex;
+                            const pt = (chartDatasets[currentRange].points || [])[idx];
+                            return pt ? (pt.label || pt.date) : items[0].label;
+                        },
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'yRev') {
+                                return ' Doanh thu: ' + formatCurrencyJs(context.raw);
+                            } else {
+                                return ' Biến động đơn: ' + context.raw + ' đơn hàng';
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#64748B',
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' }
+                    }
+                },
+                yRev: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(val) {
+                            if (val >= 1000000) return (val / 1000000).toLocaleString('vi-VN') + ' tr';
+                            if (val >= 1000) return (val / 1000).toLocaleString('vi-VN') + ' k';
+                            return val.toLocaleString('vi-VN') + ' đ';
+                        },
+                        color: '#64748B',
+                        font: { family: 'Plus Jakarta Sans', size: 11 }
+                    },
+                    grid: {
+                        color: '#F1F5F9',
+                        drawBorder: false
+                    }
+                },
+                yOrders: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0,
+                        callback: function(val) {
+                            return val + ' đơn';
+                        },
+                        color: '#64748B',
+                        font: { family: 'Plus Jakarta Sans', size: 11 }
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function switchChartRange(range) {
+    if (!chartDatasets[range]) return;
+    currentRange = range;
+
+    // Cập nhật trạng thái active của buttons
+    document.querySelectorAll('.range-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-primary', 'shadow-sm', 'font-bold');
+        btn.classList.add('hover:text-primary');
+    });
+    const activeBtn = document.getElementById('btn-' + range);
+    if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-primary', 'shadow-sm', 'font-bold');
+        activeBtn.classList.remove('hover:text-primary');
+    }
+
+    // Cập nhật badge
+    const badge = document.getElementById('chartRangeBadge');
+    if (badge) {
+        badge.textContent = (range === '7days') ? '7 Ngày Qua' :
+                            (range === '30days') ? '30 Ngày Qua' :
+                            (range === 'year') ? 'Năm <?= date("Y") ?>' : 'Mốc Có Đơn';
+    }
+
+    const dataObj = chartDatasets[range];
+    const points = dataObj.points || [];
+
+    // Cập nhật thẻ Callout Tag
+    const calloutTitle = document.getElementById('calloutTitle');
+    const calloutValue = document.getElementById('calloutValue');
+    if (dataObj.peakPoint && (dataObj.peakPoint.rev > 0 || dataObj.peakPoint.orders > 0)) {
+        if (calloutTitle) calloutTitle.textContent = 'Mốc Cao Nhất (' + dataObj.peakPoint.short + ')';
+        if (calloutValue) calloutValue.textContent = formatCurrencyJs(dataObj.peakPoint.rev) + ' • ' + dataObj.peakPoint.orders + ' đơn';
+    } else {
+        if (calloutTitle) calloutTitle.textContent = 'Trạng Thái Ghi Nhận';
+        if (calloutValue) calloutValue.textContent = '0đ • 0 đơn';
+    }
+
+    // Cập nhật thanh Summary Stats Bar
+    const totalRev = points.reduce((acc, p) => acc + (p.rev || 0), 0);
+    const totalOrders = points.reduce((acc, p) => acc + (p.orders || 0), 0);
+    const aov = totalOrders > 0 ? Math.round(totalRev / totalOrders) : 0;
+
+    const elRev = document.getElementById('summaryPeriodRev');
+    const elOrders = document.getElementById('summaryPeriodOrders');
+    const elAov = document.getElementById('summaryPeriodAov');
+    const elPeak = document.getElementById('summaryPeriodPeak');
+
+    if (elRev) elRev.textContent = formatCurrencyJs(totalRev);
+    if (elOrders) elOrders.textContent = new Intl.NumberFormat('vi-VN').format(totalOrders) + ' đơn';
+    if (elAov) elAov.textContent = formatCurrencyJs(aov);
+    if (elPeak) {
+        elPeak.textContent = (dataObj.peakPoint && (dataObj.peakPoint.rev > 0 || dataObj.peakPoint.orders > 0))
+            ? (dataObj.peakPoint.short + ': ' + formatCurrencyJs(dataObj.peakPoint.rev))
+            : 'Chưa có đơn';
+    }
+
+    // Cập nhật Chart.js nếu đang chạy
+    if (chartInstance) {
+        chartInstance.data.labels = points.map(p => p.short || p.label);
+        chartInstance.data.datasets[0].data = points.map(p => p.rev);
+        chartInstance.data.datasets[0].pointBackgroundColor = points.map(p => p.milestone ? '#006A61' : '#ffffff');
+        chartInstance.data.datasets[0].pointRadius = points.map(p => p.milestone ? 6 : (p.is_today ? 5 : 3.5));
+        chartInstance.data.datasets[1].data = points.map(p => p.orders);
+        chartInstance.data.datasets[1].backgroundColor = points.map(p => p.milestone ? '#006A61' : (p.is_today ? '#86F2E4' : '#CBD5E1'));
+        chartInstance.update();
+    } else {
+        // Cập nhật SVG fallback nếu không có Chart.js
+        updateSvgFallback(dataObj);
+    }
+}
+
+function updateSvgFallback(dataObj) {
+    const areaPath = document.getElementById('svgAreaPath');
+    const linePath = document.getElementById('svgLinePath');
+    const barsGroup = document.getElementById('svgBars');
+    const dotsGroup = document.getElementById('svgDots');
+    const xLabels = document.getElementById('svgXLabels');
+
+    if (areaPath) areaPath.setAttribute('d', dataObj.svgAreaPath || '');
+    if (linePath) linePath.setAttribute('d', dataObj.svgPath || '');
+
+    if (barsGroup) {
+        barsGroup.innerHTML = (dataObj.points || []).map(pt => {
+            const color = pt.milestone ? '#006A61' : (pt.is_today ? '#86F2E4' : '#E2E8F0');
+            const yBar = 180 - pt.bar_h;
+            return `<rect x="${pt.x - 10}" y="${yBar}" width="20" height="${pt.bar_h}" rx="4" fill="${color}" opacity="0.85">
+                        <title>${pt.label}: ${formatCurrencyJs(pt.rev)} (${pt.orders} đơn)</title>
+                    </rect>`;
+        }).join('');
+    }
+
+    if (dotsGroup) {
+        dotsGroup.innerHTML = (dataObj.points || []).map(pt => {
+            if (pt.milestone) {
+                return `<circle cx="${pt.x}" cy="${pt.y}" r="6.5" fill="#006A61" stroke="#ffffff" stroke-width="2.5">
+                            <title>${pt.label} (Đỉnh cao): ${formatCurrencyJs(pt.rev)}</title>
+                        </circle>`;
+            } else if (pt.is_today) {
+                return `<circle cx="${pt.x}" cy="${pt.y}" r="5" fill="#86F2E4" stroke="#006A61" stroke-width="2">
+                            <title>${pt.label}: ${formatCurrencyJs(pt.rev)}</title>
+                        </circle>`;
+            }
+            return '';
+        }).join('');
+    }
+
+    if (xLabels) {
+        xLabels.innerHTML = (dataObj.points || []).map(pt => {
+            const cls = pt.milestone ? 'text-secondary font-bold' : '';
+            return `<span class="${cls}">${pt.short || pt.label}</span>`;
+        }).join('');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initChart);
+</script>
