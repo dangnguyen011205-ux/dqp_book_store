@@ -199,9 +199,150 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
         </div>
     </section>
 
+    <!-- ================= SECTION: QUẢNG CÁO KÈM VOUCHER TRANG CHỦ ================= -->
+    <?php if (!empty($advertisements)): ?>
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="space-y-6">
+                <?php foreach ($advertisements as $ad): 
+                    $bannerImg = !empty($ad['anh_banner']) 
+                        ? (str_starts_with($ad['anh_banner'], 'http') ? $ad['anh_banner'] : base_url('uploads/banners/' . $ad['anh_banner']))
+                        : 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=80';
+                    $hasVoucher = !empty($ad['voucher_code']);
+                    $isSaved = $hasVoucher && in_array((int)$ad['ma_giam_gia_id'], $savedVoucherIds ?? [], true);
+                    $maxSaves = (int)($ad['so_luot_luu_toi_da'] ?? 0);
+                    $cntSaved = (int)($ad['so_luot_da_luu'] ?? 0);
+                    $isFull = ($maxSaves > 0 && $cntSaved >= $maxSaves);
+                    $remainSaves = ($maxSaves > 0) ? max(0, $maxSaves - $cntSaved) : null;
+                    $voucherMaxUses = !empty($ad['voucher_so_luot_toi_da']) ? (int)$ad['voucher_so_luot_toi_da'] : 0;
+                ?>
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-700 via-rose-700 to-primary text-white shadow-xl border border-white/10 p-6 md:p-8">
+                        <!-- Background artwork overlay -->
+                        <div class="absolute inset-0 opacity-15 bg-cover bg-center pointer-events-none mix-blend-overlay" style="background-image: url('<?= htmlspecialchars($bannerImg) ?>');"></div>
+                        <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+                            <!-- Left info -->
+                            <div class="flex-1 space-y-2 text-center lg:text-left">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold text-amber-200 border border-white/20">
+                                    <span class="material-symbols-outlined text-[15px] animate-spin">auto_awesome</span>
+                                    <span>Chương Trình Quảng Cáo &amp; Ưu Đãi Độc Quyền</span>
+                                </div>
+                                <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-sm">
+                                    <?= htmlspecialchars($ad['tieu_de']) ?>
+                                </h2>
+                                <?php if (!empty($ad['phu_de'])): ?>
+                                    <p class="text-sm text-amber-100 max-w-2xl drop-shadow-xs font-medium">
+                                        <?= htmlspecialchars($ad['phu_de']) ?>
+                                    </p>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Right: Voucher Ticket & Action Buttons -->
+                            <div class="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+                                <?php if ($hasVoucher): ?>
+                                    <!-- Voucher Ticket Card -->
+                                    <div class="relative bg-white text-slate-800 rounded-2xl p-4 shadow-xl border-2 border-dashed border-amber-300 flex items-center gap-3.5 group hover:border-amber-500 transition-colors">
+                                        <!-- Cutout circles -->
+                                        <div class="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-rose-700 rounded-full"></div>
+                                        <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-rose-700 rounded-full"></div>
+
+                                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                                            <span class="material-symbols-outlined text-[28px]">confirmation_number</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Mã Voucher</span>
+                                                <span class="text-xs font-black text-rose-600 font-mono tracking-wide"><?= htmlspecialchars($ad['voucher_code']) ?></span>
+                                            </div>
+                                            <span class="text-sm font-extrabold text-primary mt-0.5">
+                                                <?= $ad['voucher_loai'] === 'phan_tram' ? 'Giảm ' . (int)$ad['voucher_gia_tri'] . '%' : 'Giảm ' . format_currency($ad['voucher_gia_tri']) ?>
+                                            </span>
+                                            <span class="text-[10px] text-slate-500">Đơn từ <?= format_currency($ad['voucher_don_toi_thieu']) ?></span>
+                                            <div class="flex items-center gap-1.5 mt-1">
+                                                <span class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                    <?= $voucherMaxUses > 0 ? ('Dùng ' . $voucherMaxUses . ' lần / khách') : 'Dùng không giới hạn' ?>
+                                                </span>
+                                                <?php if ($maxSaves > 0): ?>
+                                                    <span class="text-[9px] font-bold <?= $isFull ? 'text-rose-700 bg-rose-50 border-rose-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200' ?> px-1.5 py-0.5 rounded border">
+                                                        <?= $isFull ? 'Đã hết lượt lưu' : 'Còn ' . $remainSaves . ' suất lưu' ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Buttons -->
+                                <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                                    <!-- Nút Xem Chương Trình -->
+                                    <button type="button" 
+                                            onclick='openProgramModal(<?= json_encode($ad, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>, <?= $isSaved ? "true" : "false" ?>)' 
+                                            class="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/30 active:scale-95 shadow-sm">
+                                        <span class="material-symbols-outlined text-[18px]">info</span>
+                                        <span>Xem Chương Trình</span>
+                                    </button>
+
+                                    <!-- Nút Lưu Nhanh Voucher -->
+                                    <?php if ($hasVoucher): ?>
+                                        <?php if ($isSaved): ?>
+                                            <button type="button" 
+                                                    disabled
+                                                    class="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-lg opacity-95 cursor-default">
+                                                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                                <span>Đã Lưu</span>
+                                            </button>
+                                        <?php elseif ($isFull): ?>
+                                            <button type="button" 
+                                                    disabled
+                                                    class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-300 text-slate-600 text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm opacity-90"
+                                                    title="Chương trình đã đủ số lượng người lưu voucher">
+                                                <span class="material-symbols-outlined text-[18px]">block</span>
+                                                <span>Đã Hết Lượt</span>
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" 
+                                                    id="claim-btn-<?= $ad['ma_giam_gia_id'] ?>" 
+                                                    onclick="claimVoucher(<?= $ad['ma_giam_gia_id'] ?>, '<?= htmlspecialchars($ad['voucher_code']) ?>', this)" 
+                                                    class="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-amber-100 text-rose-700 text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95">
+                                                <span class="material-symbols-outlined text-[18px]">bolt</span>
+                                                <span>Lưu Nhanh</span>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <!-- ================= SECTION 4: FLASH SALE GIỜ VÀNG ================= -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <?php
+    // Flash sale section: hiển thị 2 trạng thái
+    // 1. Đang active: hiển thị giá sale + countdown kết thúc
+    // 2. Sắp tới: ẩn giá, hiển thị countdown đến khi bắt đầu
+    $hasFlashItems = !empty($flashItems);
+
+    // Tìm flash sale active gần kết thúc nhất để hiển thị global countdown
+    $globalCountdownTarget = null;
+    foreach ($flashItems as $fi) {
+        $fiStart = strtotime($fi['bat_dau']);
+        $fiEnd   = strtotime($fi['ket_thuc']);
+        if ($fiStart <= time() && $fiEnd > time()) {
+            $globalCountdownTarget = $fiEnd;
+            break;
+        }
+    }
+    if (!$globalCountdownTarget && !empty($flashItems)) {
+        // Nếu chỉ có upcoming, dùng bat_dau của cái đầu tiên
+        $globalCountdownTarget = strtotime($flashItems[0]['bat_dau']);
+    }
+    ?>
+    <section id="flash-sale-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="bg-gradient-to-r from-primary-container via-[#163654] to-primary-container rounded-3xl p-6 md:p-8 text-white shadow-xl">
+            <!-- Section Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg animate-bounce">
@@ -209,83 +350,117 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-white">Sách Giờ Vàng - Flash Deals</h2>
+                            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-white">Sách Giờ Vàng - Flash Sale</h2>
                             <span class="px-2 py-0.5 rounded bg-rose-500 text-white text-[10px] font-bold uppercase">Trực Tiếp</span>
                         </div>
                         <p class="text-xs text-on-primary-container mt-0.5">Mức giá độc quyền có giới hạn số lượng dành cho độc giả trực tuyến</p>
                     </div>
                 </div>
-
-                <!-- Countdown Timer -->
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="text-on-primary-container">Chỉ còn:</span>
-                    <div class="flex items-center gap-1 font-bold">
-                        <div class="px-2.5 py-1.5 rounded-lg bg-white text-primary text-sm shadow" id="timer-hours">03</div>
-                        <span class="text-secondary-fixed">:</span>
-                        <div class="px-2.5 py-1.5 rounded-lg bg-white text-primary text-sm shadow" id="timer-minutes">45</div>
-                        <span class="text-secondary-fixed">:</span>
-                        <div class="px-2.5 py-1.5 rounded-lg bg-white text-primary text-sm shadow" id="timer-seconds">12</div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Flash Sale Book Cards Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <?php foreach ($flashDeals as $book): 
-                    $coverUrl = getBookCover($book['anh_bia'], $fallbackImages);
-                    $originalPrice = (float)$book['gia'] * 1.35; // Giá niêm yết giả định cao hơn 35%
-                ?>
-                    <div class="bg-white rounded-2xl p-4 text-slate-800 shadow-md flex flex-col justify-between group hover:-translate-y-1.5 transition-all">
+            <!-- Flash Sale Product Grid -->
+            <div id="flash-sale-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <?php if ($hasFlashItems): ?>
+                    <?php foreach ($flashItems as $item):
+                        $fsCoverUrl  = getBookCover($item['anh_bia'], $fallbackImages);
+                        $isActive    = strtotime($item['bat_dau']) <= time() && strtotime($item['ket_thuc']) > time();
+                        $isUpcoming  = strtotime($item['bat_dau']) > time();
+                        $origPrice   = (float)$item['gia'];
+                        $salePrice   = (float)$item['gia_sale'];
+                        $discountPct = $origPrice > 0 ? round((1 - $salePrice / $origPrice) * 100) : 0;
+                        $batDauTs    = strtotime($item['bat_dau']);
+                        $ketThucTs   = strtotime($item['ket_thuc']);
+                        $soldCount   = (int)($item['luot_ban'] ?? 0);
+                        $flashId     = (int)$item['id'];
+                    ?>
+                    <div class="flash-item bg-white rounded-2xl p-4 text-slate-800 shadow-md flex flex-col justify-between group hover:-translate-y-1.5 transition-all"
+                         data-id="<?= $flashId ?>"
+                         data-bat-dau="<?= $batDauTs ?>"
+                         data-ket-thuc="<?= $ketThucTs ?>"
+                         data-gia-sale="<?= $salePrice ?>"
+                         data-gia-goc="<?= $origPrice ?>">
                         <div>
                             <div class="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-slate-100 mb-3 shadow-inner">
-                                <img src="<?= $coverUrl ?>" alt="<?= htmlspecialchars($book['tieu_de']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
-                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold">-26%</span>
-                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/90 text-primary text-[10px] font-bold"><?= htmlspecialchars($book['nxb_ten'] ?? 'NXB Trẻ') ?></span>
-                            </div>
-
-                            <div class="flex items-center gap-1 text-[11px] mb-1">
-                                <span class="material-symbols-outlined text-[15px] text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
-                                <span class="font-bold text-slate-800"><?= number_format($book['diem_sao'], 1) ?></span>
-                                <span class="text-slate-400">(<?= $book['so_danh_gia'] ?>)</span>
+                                <img src="<?= $fsCoverUrl ?>" alt="<?= htmlspecialchars($item['tieu_de']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
+                                <!-- Badge: Giảm X% (khi active) hoặc "Sắp bắt đầu" -->
+                                <?php if ($isActive): ?>
+                                    <span class="flash-badge absolute top-2 left-2 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold">-<?= $discountPct ?>%</span>
+                                <?php elseif ($isUpcoming): ?>
+                                    <span class="flash-badge upcoming absolute top-2 left-2 px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-bold">Sắp bắt đầu</span>
+                                <?php endif; ?>
                             </div>
 
                             <h3 class="text-xs font-bold text-primary line-clamp-1 group-hover:text-secondary transition-colors">
-                                <a href="<?= base_url('chi-tiet/' . $book['id']) ?>"><?= htmlspecialchars($book['tieu_de']) ?></a>
+                                <a href="<?= base_url('chi-tiet/' . $item['sach_id']) ?>"><?= htmlspecialchars($item['tieu_de']) ?></a>
                             </h3>
-                            <p class="text-[11px] text-slate-500 truncate"><?= htmlspecialchars($book['tac_gia_ten'] ?? 'Nhiều tác giả') ?></p>
+                            <p class="text-[11px] text-slate-500 truncate"><?= htmlspecialchars($item['tac_gia_ten'] ?? 'Nhiều tác giả') ?></p>
 
-                            <div class="flex items-baseline gap-2 mt-2">
-                                <span class="text-sm font-bold text-rose-600"><?= format_currency($book['gia']) ?></span>
-                                <span class="text-[11px] text-slate-400 line-through"><?= format_currency($originalPrice) ?></span>
+                            <!-- Khối giá -->
+                            <div class="price-block mt-2" data-flash-id="<?= $flashId ?>">
+                                <?php if ($isActive): ?>
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="sale-price text-sm font-bold text-rose-600"><?= format_currency($salePrice) ?></span>
+                                        <span class="orig-price text-[11px] text-slate-400 line-through"><?= format_currency($origPrice) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <!-- UPCOMING: ẩn giá, hiện countdown đến khi bắt đầu -->
+                                    <div class="upcoming-price-block">
+                                        <span class="price-hidden text-sm font-bold text-slate-400">??? ₫</span>
+                                        <div class="countdown-to-start mt-1 text-[11px]" data-target="<?= $batDauTs ?>">
+                                            <span class="text-slate-500">Bắt đầu sau: </span>
+                                            <span class="countdown-timer font-bold text-amber-600">--:--:--</span>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
+
+                            <!-- Countdown kết thúc (khi active) -->
+                            <?php if ($isActive): ?>
+                            <div class="end-countdown mt-1 text-[11px]" data-target="<?= $ketThucTs ?>">
+                                <span class="text-slate-500">Kết thúc: </span><span class="countdown-timer font-bold text-rose-600">--:--:--</span>
+                            </div>
+                            <?php endif; ?>
                         </div>
 
-                        <!-- Progress & CTA -->
+                        <!-- Lượt bán + nút mua -->
                         <div class="mt-4 space-y-1.5">
-                            <div class="flex justify-between text-[11px] text-slate-500">
-                                <span>Tồn kho: <strong class="text-primary"><?= $book['so_luong_ton'] ?> cuốn</strong></span>
-                                <span class="text-emerald-600 font-semibold">Đang bán chạy</span>
+                            <div class="flex justify-between items-center text-[11px] text-slate-500">
+                                <span class="font-bold text-secondary flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-rose-500">local_fire_department</span>
+                                    <span>Đã bán: <strong><?= number_format($soldCount) ?></strong></span>
+                                </span>
+                                <span>Tồn: <?= $item['so_luong_ton'] ?? 0 ?> cuốn</span>
                             </div>
                             <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                <div class="h-full bg-rose-500 rounded-full" style="width: 75%;"></div>
+                                <div class="h-full bg-rose-500 rounded-full" style="width: <?= min(100, max(15, ($soldCount * 10) + 15)) ?>%;"></div>
                             </div>
-                            <a href="<?= base_url('chi-tiet/' . $book['id']) ?>" class="w-full mt-2 py-2.5 rounded-xl bg-secondary text-white text-xs font-bold hover:bg-secondary-container hover:text-on-secondary-container transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                            <a href="<?= base_url('chi-tiet/' . $item['sach_id']) ?>"
+                               class="buy-btn w-full mt-2 py-2.5 rounded-xl <?= $isActive ? 'bg-secondary hover:bg-secondary-container hover:text-on-secondary-container' : 'bg-slate-300 cursor-not-allowed' ?> text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm">
                                 <span class="material-symbols-outlined text-[16px]">shopping_cart</span>
-                                <span>Mua Ngay</span>
+                                <span class="btn-text"><?= $isActive ? 'Mua Ngay' : 'Sắp Mở Bán' ?></span>
                             </a>
                         </div>
                     </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <!-- Empty state -->
+                    <div class="col-span-4 flex flex-col items-center justify-center py-16 text-center">
+                        <span class="material-symbols-outlined text-[64px] text-white/40 mb-4">flash_off</span>
+                        <p class="text-white/80 text-base font-semibold">Hiện chưa có sản phẩm flash sale.</p>
+                        <p class="text-white/50 text-sm mt-1">Hãy quay lại sau nhé! Chúng tôi sẽ sớm có những ưu đãi hấp dẫn.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
+
 
     <!-- ================= SECTION 5: WEEKLY BESTSELLERS WITH TABS ================= -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <div>
                 <span class="text-xs font-bold text-secondary uppercase tracking-wider">Lựa Chọn Hàng Đầu Của Độc Giả</span>
-                <h2 class="text-xl md:text-2xl font-bold text-primary tracking-tight mt-1">Sách Bán Chạy Trong Tuần</h2>
+                <h2 class="text-xl md:text-2xl font-bold text-primary tracking-tight mt-1">Sách Bán Chạy Nhất (Theo Lượt Mua Thực Tế)</h2>
             </div>
 
             <!-- Tab Thể Loại -->
@@ -300,10 +475,11 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
             <?php foreach ($bestsellers as $idx => $book): 
                 $coverUrl = getBookCover($book['anh_bia'], $fallbackImages);
                 $originalPrice = (float)$book['gia'] * 1.25;
+                $soldCount = (int)($book['luot_ban'] ?? $book['da_ban'] ?? 0);
             ?>
                 <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group border border-slate-100">
                     <div>
@@ -321,8 +497,8 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
 
                         <div class="flex items-center gap-1 text-[11px] mt-1.5">
                             <span class="material-symbols-outlined text-[14px] text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span class="font-bold text-slate-800"><?= number_format($book['diem_sao'], 1) ?></span>
-                            <span class="text-slate-400">(<?= $book['so_danh_gia'] ?>)</span>
+                            <span class="font-bold text-slate-800"><?= number_format($book['diem_sao'] ?? 5, 1) ?></span>
+                            <span class="text-slate-400">(<?= $book['so_danh_gia'] ?? 0 ?>)</span>
                         </div>
 
                         <div class="mt-2 flex items-baseline gap-2">
@@ -331,8 +507,17 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t border-slate-100 mt-3 flex items-center gap-2">
-                        <a href="<?= base_url('chi-tiet/' . $book['id']) ?>" class="flex-1 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-secondary transition-colors text-center shadow-sm">
+                    <div class="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-2">
+                        <!-- Hiển thị lượt bán thực tế -->
+                        <div class="flex items-center justify-between text-[11px] text-slate-500">
+                            <span class="font-bold text-secondary flex items-center gap-0.5">
+                                <span class="material-symbols-outlined text-[13px] text-rose-500">local_fire_department</span>
+                                <span>Đã bán: <strong><?= number_format($soldCount) ?></strong></span>
+                            </span>
+                            <span>Tồn: <?= $book['so_luong_ton'] ?></span>
+                        </div>
+
+                        <a href="<?= base_url('chi-tiet/' . $book['id']) ?>" class="w-full py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-secondary transition-colors text-center shadow-sm">
                             Xem Chi Tiết
                         </a>
                     </div>
@@ -470,10 +655,19 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
                 <?php foreach ($featuredReviews as $rev): ?>
                     <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between space-y-4">
                         <div class="space-y-2">
-                            <div class="flex text-amber-500 gap-0.5">
-                                <?php for ($s = 1; $s <= 5; $s++): ?>
-                                    <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' <?= $s <= $rev['so_sao'] ? 1 : 0 ?>;">star</span>
-                                <?php endfor; ?>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-0.5">
+                                    <?php for ($s = 1; $s <= 5; $s++): ?>
+                                        <?php if ($s <= $rev['so_sao']): ?>
+                                            <span class="material-symbols-outlined text-[16px] text-amber-400" style="font-variation-settings: 'FILL' 1;">star</span>
+                                        <?php else: ?>
+                                            <span class="material-symbols-outlined text-[16px] text-slate-200" style="font-variation-settings: 'FILL' 0;">star</span>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                </div>
+                                <span class="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.2 rounded-full border border-amber-200/60">
+                                    <?= (int)$rev['so_sao'] ?> / 5 sao
+                                </span>
                             </div>
                             <p class="text-xs text-slate-700 leading-relaxed italic">
                                 "<?= htmlspecialchars($rev['noi_dung']) ?>"
@@ -563,39 +757,330 @@ function getBookCover(?string $anhBia, array $fallbackMap): string {
 
 </div>
 
-<!-- Countdown Timer JavaScript -->
+<!-- ================= MODAL XEM CHI TIẾT CHƯƠNG TRÌNH QUẢNG CÁO ================= -->
+<div id="modal-program-detail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/50 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[85vh]">
+        <!-- Header with Banner Background -->
+        <div class="relative p-6 bg-gradient-to-r from-amber-600 via-rose-700 to-primary text-white flex flex-col gap-2">
+            <button type="button" onclick="closeProgramModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 hover:bg-black/30 p-1.5 rounded-full backdrop-blur-xs transition-colors">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-200 bg-white/20 w-fit px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+                <span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                Chương Trình Khuyến Mãi
+            </span>
+            <h3 id="modal-program-title" class="text-xl font-black tracking-tight drop-shadow-sm text-white mt-1">---</h3>
+            <p id="modal-program-subtitle" class="text-xs text-amber-100 drop-shadow-xs font-medium">---</p>
+        </div>
+
+        <!-- Body content -->
+        <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <!-- Voucher Card in Modal -->
+            <div id="modal-voucher-box" class="hidden p-4 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-300 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-[24px]">local_activity</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-amber-800 font-bold uppercase tracking-wider block">Mã Ưu Đãi Kèm Theo:</span>
+                        <span id="modal-voucher-code" class="text-base font-black text-rose-700 font-mono">---</span>
+                        <span id="modal-voucher-val" class="block text-xs font-bold text-primary">---</span>
+                    </div>
+                </div>
+                <button type="button" id="modal-save-btn" onclick="" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-colors whitespace-nowrap flex items-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+                    <span>Lưu Vào Ví</span>
+                </button>
+            </div>
+
+            <!-- Detailed Rules & Terms -->
+            <div>
+                <h4 class="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-secondary text-[16px]">rule</span>
+                    <span>Thể Lệ &amp; Điều Kiện Tham Gia</span>
+                </h4>
+                <div id="modal-program-rules" class="text-xs text-slate-600 leading-relaxed space-y-2 whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <!-- Dynamic text injected -->
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[11px] text-slate-400">DQP Book Store • Nhà sách Trực tuyến Tinh hoa</span>
+            <button type="button" onclick="closeProgramModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-primary text-xs font-bold transition-colors">
+                Đã Hiểu
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let hours = 3;
-    let minutes = 45;
-    let seconds = 12;
+// Mở modal thể lệ chương trình
+function openProgramModal(ad, isSaved) {
+    if (!ad) return;
+    document.getElementById('modal-program-title').textContent = ad.tieu_de || 'Chương Trình Khuyến Mãi';
+    document.getElementById('modal-program-subtitle').textContent = ad.phu_de || '';
+    document.getElementById('modal-program-rules').textContent = ad.noi_dung || 'Chương trình ưu đãi áp dụng toàn hệ thống DQP Book Store cho đến khi hết ngân sách khuyến mãi.';
 
-    const hEl = document.getElementById('timer-hours');
-    const mEl = document.getElementById('timer-minutes');
-    const sEl = document.getElementById('timer-seconds');
-    const heroCountdown = document.getElementById('hero-countdown');
+    const vBox = document.getElementById('modal-voucher-box');
+    const vCode = document.getElementById('modal-voucher-code');
+    const vVal = document.getElementById('modal-voucher-val');
+    const saveBtn = document.getElementById('modal-save-btn');
 
-    setInterval(() => {
-        if (seconds > 0) {
-            seconds--;
+    if (ad.voucher_code) {
+        vBox.classList.remove('hidden');
+        vBox.classList.add('flex');
+        vCode.textContent = ad.voucher_code;
+        vVal.textContent = (ad.voucher_loai === 'phan_tram' ? `Giảm ${parseInt(ad.voucher_gia_tri)}%` : `Giảm ${new Intl.NumberFormat('vi-VN').format(ad.voucher_gia_tri)}đ`) + ` (Đơn từ ${new Intl.NumberFormat('vi-VN').format(ad.voucher_don_toi_thieu)}đ)`;
+        
+        const maxS = parseInt(ad.so_luot_luu_toi_da) || 0;
+        const cntS = parseInt(ad.so_luot_da_luu) || 0;
+        const isFull = (maxS > 0 && cntS >= maxS);
+
+        if (isSaved) {
+            saveBtn.disabled = true;
+            saveBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black cursor-default flex items-center justify-center gap-1.5 opacity-95";
+            saveBtn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Đã Lưu</span>`;
+            saveBtn.onclick = null;
+        } else if (isFull) {
+            saveBtn.disabled = true;
+            saveBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-300 text-slate-600 text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 opacity-90";
+            saveBtn.innerHTML = `<span class="material-symbols-outlined text-[18px]">block</span><span>Đã Hết Lượt</span>`;
+            saveBtn.onclick = null;
         } else {
-            seconds = 59;
-            if (minutes > 0) {
-                minutes--;
-            } else {
-                minutes = 59;
-                if (hours > 0) hours--;
-            }
+            saveBtn.disabled = false;
+            saveBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary hover:bg-secondary text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 active:scale-95";
+            saveBtn.innerHTML = `<span class="material-symbols-outlined text-[18px]">bolt</span><span>Lưu Nhanh</span>`;
+            saveBtn.onclick = function() {
+                claimVoucher(ad.ma_giam_gia_id, ad.voucher_code, this);
+            };
+        }
+    } else {
+        vBox.classList.add('hidden');
+        vBox.classList.remove('flex');
+    }
+
+    const modal = document.getElementById('modal-program-detail');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.firstElementChild.classList.remove('scale-95');
+}
+
+function closeProgramModal() {
+    const modal = document.getElementById('modal-program-detail');
+    if (!modal) return;
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.firstElementChild.classList.add('scale-95');
+}
+
+// Khách hàng bấm Lưu Voucher
+function claimVoucher(couponId, couponCode, btn) {
+    if (!couponId) return;
+
+    fetch('<?= base_url('voucher/luu/') ?>' + couponId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.require_login) {
+            navigator.clipboard.writeText(couponCode).then(() => {
+                alert(`Đã sao chép mã ưu đãi: [ ${couponCode} ]\n\nBạn hãy đăng nhập tài khoản để lưu mã này vào ví tài khoản của bạn nhé!`);
+                window.location.href = '<?= base_url('dang-nhap') ?>';
+            }).catch(() => {
+                alert(`Mã ưu đãi: [ ${couponCode} ]\n\nVui lòng đăng nhập để lưu voucher.`);
+                window.location.href = '<?= base_url('dang-nhap') ?>';
+            });
+            return;
         }
 
-        const hStr = String(hours).padStart(2, '0');
-        const mStr = String(minutes).padStart(2, '0');
-        const sStr = String(seconds).padStart(2, '0');
+        if (data.success) {
+            if (btn) {
+                btn.disabled = true;
+                btn.className = "w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-lg opacity-95 cursor-default";
+                btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Đã Lưu</span>`;
+            }
+            alert(`🎉 ${data.message}\nMã [ ${couponCode} ] đã sẵn sàng sử dụng khi bạn thanh toán.`);
+        } else if (data.is_full) {
+            if (btn) {
+                btn.disabled = true;
+                btn.className = "w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-300 text-slate-600 text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm opacity-90";
+                btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">block</span><span>Đã Hết Lượt</span>`;
+            }
+            alert(`⚠️ ${data.message}`);
+        } else {
+            alert(data.message || 'Không thể lưu mã giảm giá.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        navigator.clipboard.writeText(couponCode);
+        alert(`Đã sao chép mã [ ${couponCode} ] vào bộ nhớ tạm!`);
+    });
+}
 
-        if (hEl) hEl.textContent = hStr;
-        if (mEl) mEl.textContent = mStr;
-        if (sEl) sEl.textContent = sStr;
-        if (heroCountdown) heroCountdown.textContent = `${hStr}:${mStr}:${sStr}`;
-    }, 1000);
+// =========================================================================
+// FLASH SALE REAL-TIME COUNTDOWN & LIVE PRICE REVEAL (NO RELOAD NEEDED)
+// =========================================================================
+function formatCountdownSecs(diffMs) {
+    if (diffMs <= 0) return '00:00:00';
+    const totalSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const seconds = totalSecs % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatVNDCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+}
+
+// Khi đúng giờ bắt đầu Flash Sale: Tự động lộ giá, đổi badge, kích hoạt nút mua tại chỗ không reload!
+function revealFlashSaleItem(itemEl) {
+    if (!itemEl || itemEl.dataset.isRevealed === 'true') return;
+    itemEl.dataset.isRevealed = 'true';
+
+    const salePrice = parseFloat(itemEl.dataset.giaSale) || 0;
+    const origPrice = parseFloat(itemEl.dataset.giaGoc) || 0;
+    const ketThucTs = parseInt(itemEl.dataset.ketThuc, 10);
+    const discountPct = origPrice > 0 ? Math.round((1 - salePrice / origPrice) * 100) : 0;
+
+    // 1. Cập nhật Badge góc ảnh
+    const badge = itemEl.querySelector('.flash-badge');
+    if (badge) {
+        badge.className = 'flash-badge absolute top-2 left-2 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold animate-bounce';
+        badge.textContent = `-${discountPct}%`;
+    }
+
+    // 2. Lộ khối giá sale thực tế và giá gốc gạch ngang
+    const priceBlock = itemEl.querySelector('.price-block');
+    if (priceBlock) {
+        priceBlock.innerHTML = `
+            <div class="flex items-baseline gap-2 animate-in fade-in zoom-in-95 duration-300">
+                <span class="sale-price text-sm font-bold text-rose-600">${formatVNDCurrency(salePrice)}</span>
+                <span class="orig-price text-[11px] text-slate-400 line-through">${formatVNDCurrency(origPrice)}</span>
+            </div>
+        `;
+    }
+
+    // 3. Thay khối đếm ngược bắt đầu thành đếm ngược kết thúc
+    let endCountdown = itemEl.querySelector('.end-countdown');
+    if (!endCountdown) {
+        endCountdown = document.createElement('div');
+        endCountdown.className = 'end-countdown mt-1 text-[11px] animate-in fade-in duration-300';
+        endCountdown.dataset.target = ketThucTs;
+        endCountdown.innerHTML = `<span class="text-slate-500">Kết thúc: </span><span class="countdown-timer font-bold text-rose-600">--:--:--</span>`;
+        if (priceBlock && priceBlock.parentNode) {
+            priceBlock.parentNode.appendChild(endCountdown);
+        }
+    }
+
+    // 4. Kích hoạt nút Mua Ngay
+    const buyBtn = itemEl.querySelector('.buy-btn');
+    if (buyBtn) {
+        buyBtn.className = 'buy-btn w-full mt-2 py-2.5 rounded-xl bg-secondary hover:bg-secondary-container hover:text-on-secondary-container text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95';
+        const btnText = buyBtn.querySelector('.btn-text');
+        if (btnText) btnText.textContent = 'Mua Ngay';
+    }
+}
+
+// Khi hết giờ Flash Sale: Tự động biến mất khỏi mục flash sale
+function expireFlashSaleItem(itemEl) {
+    if (!itemEl || itemEl.dataset.isExpired === 'true') return;
+    itemEl.dataset.isExpired = 'true';
+
+    itemEl.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+    itemEl.style.opacity = '0';
+    itemEl.style.transform = 'scale(0.92)';
+
+    setTimeout(() => {
+        itemEl.remove();
+        // Kiểm tra xem còn sản phẩm nào trong grid không
+        const grid = document.getElementById('flash-sale-grid');
+        if (grid && grid.querySelectorAll('.flash-item').length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-4 flex flex-col items-center justify-center py-16 text-center animate-in fade-in duration-500">
+                    <span class="material-symbols-outlined text-[64px] text-white/40 mb-4">flash_off</span>
+                    <p class="text-white/80 text-base font-semibold">Chương trình flash sale đợt này đã kết thúc.</p>
+                    <p class="text-white/50 text-sm mt-1">Các sản phẩm đã trở về giá niêm yết ban đầu. Hãy đón chờ các khung giờ vàng tiếp theo nhé!</p>
+                </div>
+            `;
+        }
+    }, 600);
+}
+
+// Cập nhật tất cả đồng hồ đếm ngược mỗi giây
+function tickFlashSaleTimers() {
+    const now = Date.now();
+
+    // 1. Kiểm tra các sản phẩm sắp bắt đầu (upcoming)
+    document.querySelectorAll('.countdown-to-start').forEach(el => {
+        const startTarget = parseInt(el.dataset.target, 10) * 1000;
+        const diff = startTarget - now;
+        const timerSpan = el.querySelector('.countdown-timer');
+
+        if (diff <= 0) {
+            // ĐÃ ĐẾN GIỜ FLASH SALE -> LỘ GIÁ VÀ KÍCH HOẠT NGAY LẬP TỨC
+            const itemEl = el.closest('.flash-item');
+            if (itemEl) revealFlashSaleItem(itemEl);
+        } else {
+            if (timerSpan) timerSpan.textContent = formatCountdownSecs(diff);
+        }
+    });
+
+    // 2. Kiểm tra các sản phẩm đang diễn ra (active)
+    document.querySelectorAll('.end-countdown').forEach(el => {
+        const endTarget = parseInt(el.dataset.target, 10) * 1000;
+        const diff = endTarget - now;
+        const timerSpan = el.querySelector('.countdown-timer');
+
+        if (diff <= 0) {
+            // ĐÃ HẾT GIỜ -> TỰ ĐỘNG BIẾN MẤT KHỎI MỤC FLASH SALE
+            const itemEl = el.closest('.flash-item');
+            if (itemEl) expireFlashSaleItem(itemEl);
+        } else {
+            if (timerSpan) timerSpan.textContent = formatCountdownSecs(diff);
+        }
+    });
+
+    // 3. Cập nhật đồng hồ Hero Banner (nếu có)
+    const heroCd = document.getElementById('hero-countdown');
+    if (heroCd) {
+        if (!heroCd.dataset.target) {
+            heroCd.dataset.target = Date.now() + (36 * 3600 + 14 * 60 + 8) * 1000;
+        }
+        const heroDiff = Math.max(0, parseInt(heroCd.dataset.target, 10) - now);
+        const h = Math.floor(heroDiff / (1000 * 60 * 60));
+        const m = Math.floor((heroDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((heroDiff % (1000 * 60)) / 1000);
+        heroCd.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+}
+
+// 4. Polling định kỳ kiểm tra biến động cấu hình từ trang quản trị (30s một lần)
+function pollFlashSaleStatus() {
+    fetch('<?= base_url('flash-sale/status') ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (!data) return;
+            const currentItemIds = Array.from(document.querySelectorAll('.flash-item')).map(el => parseInt(el.dataset.id, 10));
+            const serverItemIds = [...data.active, ...data.upcoming].map(it => parseInt(it.id, 10));
+
+            const isDifferent = currentItemIds.length !== serverItemIds.length ||
+                                currentItemIds.some(id => !serverItemIds.includes(id));
+            if (isDifferent) {
+                console.log('Phát hiện cập nhật Flash Sale mới từ Admin, đang đồng bộ...');
+                window.location.reload();
+            }
+        })
+        .catch(err => console.debug('Polling Flash Sale status:', err));
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    tickFlashSaleTimers();
+    setInterval(tickFlashSaleTimers, 1000);
+    setInterval(pollFlashSaleStatus, 30000);
 });
 </script>

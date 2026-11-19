@@ -231,6 +231,10 @@ $categories = (new Category())->getAll();
                                     <span class="material-symbols-outlined text-[18px]">inventory_2</span>
                                     Đơn hàng của tôi
                                 </a>
+                                <a class="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-surface-container-low hover:text-primary rounded-xl transition-colors" href="<?= base_url('tai-khoan/vi-voucher') ?>">
+                                    <span class="material-symbols-outlined text-[18px]">confirmation_number</span>
+                                    Ví voucher của tôi
+                                </a>
                                 <div class="my-1 border-t border-slate-100"></div>
                                 <a class="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" href="<?= base_url('dang-xuat') ?>">
                                     <span class="material-symbols-outlined text-[18px]">logout</span>

@@ -29,10 +29,23 @@ class CheckoutController extends Controller {
         Auth::requireLogin();
         $userId = Auth::id();
 
-        $items = $this->cartModel->getItems($userId);
-        if (empty($items)) {
-            flash('warning', 'Giỏ hàng của bạn đang trống, vui lòng chọn sách trước khi thanh toán.');
-            redirect('tim-kiem');
+        // Kiểm tra chế độ MUA NGAY (chỉ mua đúng 1 sản phẩm được chọn, không bao gồm toàn bộ giỏ hàng)
+        $isBuyNow = !empty($_SESSION['buy_now_item']);
+        if ($isBuyNow) {
+            $bn = $_SESSION['buy_now_item'];
+            $single = $this->cartModel->getSingleItemForCheckout((int)$bn['sach_id'], (int)($bn['so_luong'] ?? 1));
+            if (!$single) {
+                unset($_SESSION['buy_now_item']);
+                flash('warning', 'Sản phẩm mua nhanh không tồn tại hoặc đã hết hàng.');
+                redirect('trang-chu');
+            }
+            $items = [$single];
+        } else {
+            $items = $this->cartModel->getItems($userId);
+            if (empty($items)) {
+                flash('warning', 'Giỏ hàng của bạn đang trống, vui lòng chọn sách trước khi thanh toán.');
+                redirect('tim-kiem');
+            }
         }
 
         // Tính tổng tiền hàng
@@ -47,21 +60,49 @@ class CheckoutController extends Controller {
         $standardShipping = ($subtotal >= 250000) ? 0.0 : 22000.0;
         $shippingFee = $standardShipping;
 
-        // Xử lý mã giảm giá
-        $appliedCoupon = null;
+        // Xử lý voucher chuẩn Shopee (Hỗ trợ áp dụng đồng thời Voucher Giảm Giá + Mã Freeship)
+        $appliedDiscountCoupon = null;
+        $appliedFreeshipCoupon = null;
         $discount = 0.0;
-        if (!empty($_SESSION['applied_coupon'])) {
-            $couponCode = $_SESSION['applied_coupon']['code'];
-            $valResult = $this->couponModel->validateCoupon($couponCode, $subtotal);
-            if ($valResult['valid']) {
-                $appliedCoupon = $valResult['coupon'];
+        $shippingDiscount = 0.0;
+
+        // 1. Voucher giảm giá đơn hàng
+        $discountCode = $_SESSION['applied_discount_coupon']['code'] ?? $_SESSION['applied_coupon']['code'] ?? null;
+        if (!empty($discountCode)) {
+            $valResult = $this->couponModel->validateCoupon($discountCode, $subtotal, $userId, $shippingFee);
+            if ($valResult['valid'] && $valResult['loai_voucher'] !== 'mien_phi_van_chuyen') {
+                $appliedDiscountCoupon = $valResult['coupon'];
                 $discount = (float)$valResult['discount'];
+                $_SESSION['applied_discount_coupon'] = ['code' => $discountCode, 'discount' => $discount, 'coupon' => $appliedDiscountCoupon];
+                $_SESSION['applied_coupon'] = $_SESSION['applied_discount_coupon'];
             } else {
-                unset($_SESSION['applied_coupon']);
+                unset($_SESSION['applied_discount_coupon'], $_SESSION['applied_coupon']);
             }
         }
 
-        $grandTotal = max(0.0, $subtotal - $discount + $shippingFee);
+        // 2. Mã Freeship
+        $freeshipCode = $_SESSION['applied_freeship_coupon']['code'] ?? null;
+        if (empty($freeshipCode) && !empty($_SESSION['applied_coupon']['coupon']) && ($_SESSION['applied_coupon']['coupon']['loai_voucher'] ?? '') === 'mien_phi_van_chuyen') {
+            $freeshipCode = $_SESSION['applied_coupon']['code'];
+        }
+        if (!empty($freeshipCode)) {
+            $valShip = $this->couponModel->validateCoupon($freeshipCode, $subtotal, $userId, $shippingFee);
+            if ($valShip['valid'] && $valShip['loai_voucher'] === 'mien_phi_van_chuyen') {
+                $appliedFreeshipCoupon = $valShip['coupon'];
+                $shippingDiscount = (float)$valShip['discount'];
+                $_SESSION['applied_freeship_coupon'] = ['code' => $freeshipCode, 'discount' => $shippingDiscount, 'coupon' => $appliedFreeshipCoupon];
+            } else {
+                unset($_SESSION['applied_freeship_coupon']);
+            }
+        }
+
+        $finalShippingFee = max(0.0, $shippingFee - $shippingDiscount);
+        $grandTotal = max(0.0, $subtotal - $discount + $finalShippingFee);
+
+        // Lấy danh sách voucher trong kho riêng của user, phân loại Shopee
+        $walletCoupons = $this->couponModel->getUserWalletCoupons($userId, 'available');
+        $freeshipCoupons = array_values(array_filter($walletCoupons, fn($c) => ($c['loai_voucher'] ?? 'giam_gia') === 'mien_phi_van_chuyen'));
+        $discountCoupons = array_values(array_filter($walletCoupons, fn($c) => ($c['loai_voucher'] ?? 'giam_gia') !== 'mien_phi_van_chuyen'));
 
         // Lấy danh sách địa chỉ của người dùng
         $addresses = $this->addressModel->getByUserId($userId);
@@ -77,16 +118,24 @@ class CheckoutController extends Controller {
         }
 
         $this->view('client.checkout', [
-            'title'          => 'Thanh Toán & Xác Nhận Đơn Hàng | ' . APP_NAME,
-            'items'          => $items,
-            'subtotal'       => $subtotal,
-            'totalQuantity'  => $totalQuantity,
-            'shippingFee'    => $shippingFee,
-            'discount'       => $discount,
-            'grandTotal'     => $grandTotal,
-            'appliedCoupon'  => $appliedCoupon,
-            'addresses'      => $addresses,
-            'defaultAddress' => $defaultAddress
+            'title'                 => 'Thanh Toán & Xác Nhận Đơn Hàng | ' . APP_NAME,
+            'items'                 => $items,
+            'subtotal'              => $subtotal,
+            'totalQuantity'         => $totalQuantity,
+            'shippingFee'           => $shippingFee,
+            'discount'              => $discount,
+            'shippingDiscount'      => $shippingDiscount,
+            'finalShippingFee'      => $finalShippingFee,
+            'grandTotal'            => $grandTotal,
+            'appliedCoupon'         => $appliedDiscountCoupon ?? $appliedFreeshipCoupon,
+            'appliedDiscountCoupon' => $appliedDiscountCoupon,
+            'appliedFreeshipCoupon' => $appliedFreeshipCoupon,
+            'addresses'             => $addresses,
+            'defaultAddress'        => $defaultAddress,
+            'coupons'               => $walletCoupons,
+            'freeshipCoupons'       => $freeshipCoupons,
+            'discountCoupons'       => $discountCoupons,
+            'isBuyNow'              => $isBuyNow
         ]);
     }
 
@@ -98,11 +147,24 @@ class CheckoutController extends Controller {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = Auth::id();
-            $items = $this->cartModel->getItems($userId);
 
-            if (empty($items)) {
-                flash('error', 'Giỏ hàng của bạn đang trống.');
-                redirect('gio-hang');
+            // Kiểm tra chế độ MUA NGAY: chỉ xử lý đúng sản phẩm đó, không trừ hay xóa giỏ hàng
+            $isBuyNow = !empty($_SESSION['buy_now_item']);
+            if ($isBuyNow) {
+                $bn = $_SESSION['buy_now_item'];
+                $single = $this->cartModel->getSingleItemForCheckout((int)$bn['sach_id'], (int)($bn['so_luong'] ?? 1));
+                if (!$single) {
+                    unset($_SESSION['buy_now_item']);
+                    flash('error', 'Sản phẩm mua nhanh không còn khả dụng trong kho.');
+                    redirect('trang-chu');
+                }
+                $items = [$single];
+            } else {
+                $items = $this->cartModel->getItems($userId);
+                if (empty($items)) {
+                    flash('error', 'Giỏ hàng của bạn đang trống.');
+                    redirect('gio-hang');
+                }
             }
 
             // 1. Xác định địa chỉ giao hàng
@@ -160,21 +222,41 @@ class CheckoutController extends Controller {
                 $shippingFee = 40000.0; // Hỏa tốc
             }
 
-            // 3. Kiểm tra mã giảm giá
-            $appliedCoupon = null;
+            // 3. Kiểm tra mã giảm giá & mã freeship (Chuẩn Shopee)
+            $appliedDiscountCoupon = null;
+            $appliedFreeshipCoupon = null;
             $discount = 0.0;
-            if (!empty($_SESSION['applied_coupon'])) {
-                $couponCode = $_SESSION['applied_coupon']['code'];
-                $valResult = $this->couponModel->validateCoupon($couponCode, $subtotal);
-                if ($valResult['valid']) {
-                    $appliedCoupon = $valResult['coupon'];
+            $shippingDiscount = 0.0;
+
+            // Mã giảm giá đơn hàng
+            $discountCode = $_SESSION['applied_discount_coupon']['code'] ?? $_SESSION['applied_coupon']['code'] ?? null;
+            if (!empty($discountCode)) {
+                $valResult = $this->couponModel->validateCoupon($discountCode, $subtotal, $userId, $shippingFee);
+                if ($valResult['valid'] && $valResult['loai_voucher'] !== 'mien_phi_van_chuyen') {
+                    $appliedDiscountCoupon = $valResult['coupon'];
                     $discount = (float)$valResult['discount'];
                 } else {
-                    unset($_SESSION['applied_coupon']);
+                    unset($_SESSION['applied_discount_coupon'], $_SESSION['applied_coupon']);
                 }
             }
 
-            $grandTotal = max(0.0, $subtotal - $discount + $shippingFee);
+            // Mã freeship
+            $freeshipCode = $_SESSION['applied_freeship_coupon']['code'] ?? null;
+            if (empty($freeshipCode) && !empty($_SESSION['applied_coupon']['coupon']) && ($_SESSION['applied_coupon']['coupon']['loai_voucher'] ?? '') === 'mien_phi_van_chuyen') {
+                $freeshipCode = $_SESSION['applied_coupon']['code'];
+            }
+            if (!empty($freeshipCode)) {
+                $valShip = $this->couponModel->validateCoupon($freeshipCode, $subtotal, $userId, $shippingFee);
+                if ($valShip['valid'] && $valShip['loai_voucher'] === 'mien_phi_van_chuyen') {
+                    $appliedFreeshipCoupon = $valShip['coupon'];
+                    $shippingDiscount = (float)$valShip['discount'];
+                } else {
+                    unset($_SESSION['applied_freeship_coupon']);
+                }
+            }
+
+            $finalShippingFee = max(0.0, $shippingFee - $shippingDiscount);
+            $grandTotal = max(0.0, $subtotal - $discount + $finalShippingFee);
             $paymentMethod = $_POST['payment_method'] ?? 'COD';
             $orderNotes = trim($_POST['order_notes'] ?? '');
 
@@ -185,16 +267,20 @@ class CheckoutController extends Controller {
                 'dia_chi_giao'   => $diaChiGiao,
                 'tong_tien_hang' => $subtotal,
                 'tien_giam'      => $discount,
+                'tien_giam_ship' => $shippingDiscount,
                 'phi_van_chuyen' => $shippingFee,
                 'tong_thanh_toan'=> $grandTotal,
                 'phuong_thuc'    => $paymentMethod,
                 'ghi_chu_khach'  => $orderNotes
             ];
 
-            $result = $this->orderModel->createOrder($orderData, $items, $appliedCoupon);
+            $result = $this->orderModel->createOrder($orderData, $items, $appliedDiscountCoupon, $isBuyNow, $appliedFreeshipCoupon);
 
             if ($result['success']) {
-                unset($_SESSION['applied_coupon']);
+                unset($_SESSION['applied_coupon'], $_SESSION['applied_discount_coupon'], $_SESSION['applied_freeship_coupon']);
+                if ($isBuyNow) {
+                    unset($_SESSION['buy_now_item']);
+                }
                 flash('success', 'Đặt hàng thành công! Cảm ơn bạn đã lựa chọn DQP Book Store.');
                 $orderId = (int)$result['order_id'];
                 if ($paymentMethod === 'VNPAY') {

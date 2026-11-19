@@ -164,7 +164,12 @@
             <!-- Search field -->
             <div class="md:col-span-4 relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
-                <input name="q" value="<?= htmlspecialchars($search) ?>" class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface placeholder:text-outline text-xs focus:outline-none focus:bg-white focus:border-secondary transition-all" placeholder="Tìm theo Mã đơn (#BK-...), Tên, SĐT, Địa chỉ..." type="text"/>
+                <input name="q" value="<?= htmlspecialchars($search) ?>" class="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface placeholder:text-outline text-xs focus:outline-none focus:bg-white focus:border-secondary transition-all" placeholder="Tìm theo Mã đơn (#BK-...), Tên sách, Tên khách, SĐT..." type="text"/>
+                <?php if (!empty($search)): ?>
+                    <a href="<?= base_url('admin/don-hang?status=' . $currentStatus) ?>" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" title="Xóa tìm kiếm">
+                        <span class="material-symbols-outlined text-[16px]">close</span>
+                    </a>
+                <?php endif; ?>
             </div>
 
             <!-- Date range -->
@@ -177,7 +182,7 @@
                 </div>
             </div>
 
-                        <!-- Payment method -->
+            <!-- Payment method -->
             <div class="md:col-span-2 relative">
                 <select name="phuong_thuc" onchange="this.form.submit()" class="w-full pl-3 pr-7 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface text-xs appearance-none focus:outline-none focus:bg-white focus:border-secondary cursor-pointer">
                     <option value="">Cổng: Tất cả</option>
@@ -187,13 +192,13 @@
                 <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">unfold_more</span>
             </div>
 
-            <!-- Payment status -->
+            <!-- Filter Status (Đã đổi từ Thất bại thành Đã hủy) -->
             <div class="md:col-span-2 relative">
                 <select name="payment_status" onchange="this.form.submit()" class="w-full pl-3 pr-7 py-2 rounded-xl bg-slate-50 border border-slate-200 text-on-surface text-xs appearance-none focus:outline-none focus:bg-white focus:border-secondary cursor-pointer">
-                    <option value="">Tiền: Tất cả</option>
+                    <option value="">Lọc: Tất cả</option>
                     <option value="thanh_cong" <?= ($paymentStatus ?? '') === 'thanh_cong' ? 'selected' : '' ?>>Đã thanh toán</option>
                     <option value="cho_thanh_toan" <?= ($paymentStatus ?? '') === 'cho_thanh_toan' ? 'selected' : '' ?>>Chờ thanh toán</option>
-                    <option value="that_bai" <?= ($paymentStatus ?? '') === 'that_bai' ? 'selected' : '' ?>>Thất bại</option>
+                    <option value="da_huy" <?= ($paymentStatus ?? '') === 'da_huy' || ($currentStatus === 'da_huy') ? 'selected' : '' ?>>Đã hủy</option>
                 </select>
                 <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">unfold_more</span>
             </div>
@@ -345,17 +350,35 @@
 
                                 <!-- Hành động -->
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        <!-- Quick Status Change Select -->
-                                        <div class="relative group/tooltip inline-block">
-                                            <select onchange="quickUpdateStatus(<?= $ord['id'] ?>, this.value)" 
-                                                    class="bg-slate-100 hover:bg-slate-200 text-primary font-bold text-[11px] px-2.5 py-1.5 rounded-lg border-0 cursor-pointer focus:ring-2 focus:ring-secondary/40 transition-colors">
-                                                <option value="cho_xac_nhan" <?= $ord['trang_thai'] === 'cho_xac_nhan' ? 'selected' : '' ?>>Chờ xác nhận</option>
-                                                <option value="da_xac_nhan"  <?= $ord['trang_thai'] === 'da_xac_nhan' ? 'selected' : '' ?>>Đã xác nhận</option>
-                                                <option value="dang_giao"    <?= $ord['trang_thai'] === 'dang_giao' ? 'selected' : '' ?>>Đang giao</option>
-                                                <option value="hoan_thanh"   <?= $ord['trang_thai'] === 'hoan_thanh' ? 'selected' : '' ?>>Hoàn thành</option>
-                                                <option value="da_huy"       <?= $ord['trang_thai'] === 'da_huy' ? 'selected' : '' ?>>Hủy đơn</option>
-                                            </select>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- Step Action Button Container -->
+                                        <div id="action-btn-container-<?= $ord['id'] ?>" class="inline-flex items-center">
+                                            <?php if ($ord['trang_thai'] === 'cho_xac_nhan'): ?>
+                                                <button type="button" onclick="quickStepStatus(<?= $ord['id'] ?>, 'da_xac_nhan')" class="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận đơn hàng">
+                                                    <span class="material-symbols-outlined text-[15px]">check_circle</span>
+                                                    <span>Xác nhận</span>
+                                                </button>
+                                            <?php elseif ($ord['trang_thai'] === 'da_xac_nhan'): ?>
+                                                <button type="button" onclick="quickStepStatus(<?= $ord['id'] ?>, 'dang_giao')" class="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Bắt đầu giao bưu cục">
+                                                    <span class="material-symbols-outlined text-[15px]">local_shipping</span>
+                                                    <span>Giao hàng</span>
+                                                </button>
+                                            <?php elseif ($ord['trang_thai'] === 'dang_giao'): ?>
+                                                <button type="button" onclick="quickStepStatus(<?= $ord['id'] ?>, 'hoan_thanh')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận giao hàng thành công">
+                                                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                                                    <span>Hoàn thành</span>
+                                                </button>
+                                            <?php elseif ($ord['trang_thai'] === 'hoan_thanh'): ?>
+                                                <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-[11px] inline-flex items-center gap-1 border border-emerald-200">
+                                                    <span class="material-symbols-outlined text-[14px]">done_all</span>
+                                                    <span>Hoàn tất</span>
+                                                </span>
+                                            <?php elseif ($ord['trang_thai'] === 'da_huy'): ?>
+                                                <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold text-[11px] inline-flex items-center gap-1 border border-rose-200">
+                                                    <span class="material-symbols-outlined text-[14px]">cancel</span>
+                                                    <span>Đã hủy</span>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <!-- Action View -->
@@ -476,8 +499,12 @@
                     <span class="text-secondary font-semibold" id="drawerShipping">0đ</span>
                 </div>
                 <div class="flex justify-between text-slate-600" id="drawerDiscountRow">
-                    <span>Giảm giá khuyến mãi:</span>
+                    <span>Giảm giá tiền hàng:</span>
                     <span class="text-rose-600 font-bold" id="drawerDiscount">-0đ</span>
+                </div>
+                <div class="flex justify-between text-slate-600 hidden" id="drawerShippingDiscountRow">
+                    <span>Giảm phí vận chuyển:</span>
+                    <span class="text-emerald-600 font-bold" id="drawerShippingDiscount">-0đ</span>
                 </div>
                 <div class="flex justify-between text-slate-600">
                     <span>Phương thức thanh toán:</span>
@@ -607,8 +634,14 @@
         }, 3500);
     }
 
-    // Đổi trạng thái nhanh từ dropdown bảng
-    function quickUpdateStatus(orderId, newStatus) {
+    // Đổi trạng thái tiến trình đơn hàng (AJAX không reload trang)
+    function quickStepStatus(orderId, newStatus) {
+        const btnContainer = document.getElementById('action-btn-container-' + orderId);
+        if (btnContainer) {
+            btnContainer.style.opacity = '0.5';
+            btnContainer.style.pointerEvents = 'none';
+        }
+
         fetch('<?= base_url('admin/don-hang/cap-nhat-trang-thai') ?>', {
             method: 'POST',
             headers: {
@@ -618,24 +651,186 @@
             body: new URLSearchParams({
                 'order_id': orderId,
                 'trang_thai': newStatus,
-                'ghi_chu': 'Cập nhật trực tiếp qua dropdown quản trị viên'
+                'ghi_chu': 'Quản trị viên thao tác tiến trình đơn hàng'
             })
         })
         .then(res => res.json())
         .then(data => {
+            if (btnContainer) {
+                btnContainer.style.opacity = '1';
+                btnContainer.style.pointerEvents = 'auto';
+            }
             if (data.success) {
                 showToast(`Đơn hàng #BK-${orderId}`, data.message);
-                // Cập nhật lại badge trạng thái trong bảng
+                // 1. Cập nhật badge trạng thái đơn hàng trong bảng
                 updateRowBadge(orderId, newStatus);
+                
+                // 2. Chuyển nút hành động tại hàng sang bước kế tiếp ngay lập tức
+                updateRowActionButton(orderId, newStatus);
+
+                // 3. Cập nhật dropdown select nếu có
+                const sel = document.getElementById('quick-select-' + orderId);
+                if (sel) sel.value = newStatus;
+
+                // 4. Cập nhật thanh toán nếu đơn COD hoàn thành
+                if (data.payment_status) {
+                    updateRowPayment(orderId, data.payment_status, data.payment_method || 'COD');
+                }
+
+                // 5. Cập nhật trực tiếp Drawer nếu đang mở đơn này (KHÔNG đóng drawer!)
+                if (currentDrawerOrderId === orderId) {
+                    updateDrawerLiveStatus(orderId, newStatus, data.payment_status, data.payment_method);
+                }
             } else {
                 showToast(`Lỗi #BK-${orderId}`, data.message, true);
-                setTimeout(() => window.location.reload(), 1500);
             }
         })
         .catch(err => {
+            if (btnContainer) {
+                btnContainer.style.opacity = '1';
+                btnContainer.style.pointerEvents = 'auto';
+            }
             console.error(err);
             showToast('Lỗi kết nối', 'Không thể gửi yêu cầu cập nhật: ' + err, true);
         });
+    }
+
+    // Alias hỗ trợ dropdown cũ
+    function quickUpdateStatus(orderId, newStatus) {
+        quickStepStatus(orderId, newStatus);
+    }
+
+    // Cập nhật nút bấm sang bước tiếp theo ngay tại hàng
+    function updateRowActionButton(orderId, status) {
+        const container = document.getElementById('action-btn-container-' + orderId);
+        if (!container) return;
+
+        if (status === 'cho_xac_nhan') {
+            container.innerHTML = `<button type="button" onclick="quickStepStatus(${orderId}, 'da_xac_nhan')" class="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận đơn hàng"><span class="material-symbols-outlined text-[15px]">check_circle</span><span>Xác nhận</span></button>`;
+        } else if (status === 'da_xac_nhan') {
+            container.innerHTML = `<button type="button" onclick="quickStepStatus(${orderId}, 'dang_giao')" class="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Bắt đầu giao bưu cục"><span class="material-symbols-outlined text-[15px]">local_shipping</span><span>Giao hàng</span></button>`;
+        } else if (status === 'dang_giao') {
+            container.innerHTML = `<button type="button" onclick="quickStepStatus(${orderId}, 'hoan_thanh')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận giao hàng thành công"><span class="material-symbols-outlined text-[15px]">verified</span><span>Hoàn thành</span></button>`;
+        } else if (status === 'hoan_thanh') {
+            container.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-[11px] inline-flex items-center gap-1 border border-emerald-200"><span class="material-symbols-outlined text-[14px]">done_all</span><span>Hoàn tất</span></span>`;
+        } else if (status === 'da_huy') {
+            container.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold text-[11px] inline-flex items-center gap-1 border border-rose-200"><span class="material-symbols-outlined text-[14px]">cancel</span><span>Đã hủy</span></span>`;
+        }
+    }
+
+    // Cập nhật ô thanh toán tại hàng
+    function updateRowPayment(orderId, paymentStatus, paymentMethod) {
+        const cell = document.getElementById('order-payment-cell-' + orderId);
+        if (!cell) return;
+
+        let badgeHtml = '';
+        if (paymentStatus === 'thanh_cong') {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán</span>`;
+        } else if (paymentStatus === 'that_bai') {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">error</span> Thất bại</span>`;
+        } else {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán</span>`;
+        }
+
+        const isVnpay = (paymentMethod === 'VNPAY');
+        const methodClass = isVnpay ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-700';
+
+        cell.innerHTML = `
+            <div class="flex flex-col items-center gap-1">
+                ${badgeHtml}
+                <div class="flex items-center gap-1 flex-wrap justify-center">
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${methodClass}">
+                        ${paymentMethod || 'COD'}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+    // Cập nhật Drawer realtime không đóng
+    function updateDrawerLiveStatus(orderId, newStatus, paymentStatus, paymentMethod) {
+        const statusMap = {
+            'cho_xac_nhan': { label: 'Chờ xác nhận', bg: 'bg-amber-100 text-amber-800' },
+            'da_xac_nhan':  { label: 'Đã xác nhận', bg: 'bg-slate-200 text-slate-800' },
+            'dang_giao':    { label: 'Đang vận chuyển', bg: 'bg-sky-100 text-sky-800' },
+            'hoan_thanh':   { label: 'Giao thành công', bg: 'bg-emerald-100 text-emerald-800' },
+            'da_huy':       { label: 'Đã hủy', bg: 'bg-rose-100 text-rose-800' }
+        };
+        const sInfo = statusMap[newStatus] || { label: newStatus, bg: 'bg-slate-100 text-slate-700' };
+        
+        const badge = document.getElementById('drawerStatusBadge');
+        if (badge) {
+            badge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${sInfo.bg}`;
+            badge.textContent = sInfo.label;
+        }
+
+        if (paymentStatus) {
+            const paymentStatusBadge = document.getElementById('drawerPaymentStatusBadge');
+            if (paymentStatusBadge) {
+                if (paymentStatus === 'thanh_cong') {
+                    paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">check_circle</span> Đã thanh toán</span>`;
+                } else if (paymentStatus === 'that_bai') {
+                    paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">error</span> Thất bại</span>`;
+                } else {
+                    paymentStatusBadge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px]">schedule</span> Chờ thanh toán</span>`;
+                }
+            }
+
+            const paymentSelect = document.getElementById('drawerPaymentStatusSelect');
+            if (paymentSelect) paymentSelect.value = paymentStatus;
+        }
+
+        // Cập nhật các nút hành động footer của drawer
+        renderDrawerActionButtons(orderId, newStatus);
+    }
+
+    // Render nút hành động Footer của Drawer theo trạng thái
+    function renderDrawerActionButtons(orderId, status) {
+        const actionBtns = document.getElementById('drawerActionButtons');
+        if (!actionBtns) return;
+        actionBtns.innerHTML = '';
+
+        if (status !== 'da_huy' && status !== 'hoan_thanh') {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = "px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors";
+            cancelBtn.textContent = "Hủy Đơn";
+            cancelBtn.onclick = function() {
+                if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #BK-${orderId}? Tồn kho sẽ tự động được hoàn trả.`)) {
+                    quickStepStatus(orderId, 'da_huy');
+                }
+            };
+            actionBtns.appendChild(cancelBtn);
+        }
+
+        if (status === 'cho_xac_nhan') {
+            const nextBtn = document.createElement('button');
+            nextBtn.className = "px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1 active:scale-95";
+            nextBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span><span>Xác Nhận & Đóng Gói</span>`;
+            nextBtn.onclick = function() {
+                quickStepStatus(orderId, 'da_xac_nhan');
+            };
+            actionBtns.appendChild(nextBtn);
+        } else if (status === 'da_xac_nhan') {
+            const shipBtn = document.createElement('button');
+            shipBtn.className = "px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1 active:scale-95";
+            shipBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">local_shipping</span><span>Giao Hàng Bưu Cục</span>`;
+            shipBtn.onclick = function() {
+                quickStepStatus(orderId, 'dang_giao');
+            };
+            actionBtns.appendChild(shipBtn);
+        } else if (status === 'dang_giao') {
+            const completeBtn = document.createElement('button');
+            completeBtn.className = "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1 active:scale-95";
+            completeBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">verified</span><span>Hoàn Tất Giao Đơn</span>`;
+            completeBtn.onclick = function() {
+                quickStepStatus(orderId, 'hoan_thanh');
+            };
+            actionBtns.appendChild(completeBtn);
+        } else if (status === 'hoan_thanh') {
+            actionBtns.innerHTML = `<span class="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span> Giao hàng thành công</span>`;
+        } else if (status === 'da_huy') {
+            actionBtns.innerHTML = `<span class="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-800 font-bold text-xs inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">cancel</span> Đơn đã hủy</span>`;
+        }
     }
 
     // Cập nhật hiển thị badge tại chỗ
@@ -759,6 +954,19 @@
             discountRow.classList.remove('flex');
         }
 
+        const shipDiscountRow = document.getElementById('drawerShippingDiscountRow');
+        const shipDiscountVal = parseFloat(order.tien_giam_ship || 0);
+        if (shipDiscountRow) {
+            if (shipDiscountVal > 0) {
+                shipDiscountRow.classList.remove('hidden');
+                shipDiscountRow.classList.add('flex');
+                document.getElementById('drawerShippingDiscount').textContent = '-' + formatMoney(shipDiscountVal);
+            } else {
+                shipDiscountRow.classList.add('hidden');
+                shipDiscountRow.classList.remove('flex');
+            }
+        }
+
                 document.getElementById('drawerPaymentMethod').textContent = (order.phuong_thuc || 'COD') + (order.trang_thai_thanh_toan === 'thanh_cong' ? ' (Đã thanh toán)' : ' (Chờ thanh toán)');
 
         // Đổ thông tin vào Khối Đối Soát Thanh Toán
@@ -833,51 +1041,7 @@
         }
 
         // 6. Action buttons in Drawer Footer
-        const actionBtns = document.getElementById('drawerActionButtons');
-        actionBtns.innerHTML = '';
-
-        if (order.trang_thai !== 'da_huy' && order.trang_thai !== 'hoan_thanh') {
-            // Nút Hủy
-            const cancelBtn = document.createElement('button');
-            cancelBtn.className = "px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors";
-            cancelBtn.textContent = "Hủy Đơn";
-            cancelBtn.onclick = function() {
-                if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #BK-${order.id}? Tồn kho sẽ tự động được hoàn trả.`)) {
-                    quickUpdateStatus(order.id, 'da_huy');
-                    closeOrderDrawer();
-                }
-            };
-            actionBtns.appendChild(cancelBtn);
-        }
-
-        if (order.trang_thai === 'cho_xac_nhan') {
-            const nextBtn = document.createElement('button');
-            nextBtn.className = "px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1";
-            nextBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check</span><span>Xác Nhận & Đóng Gói</span>`;
-            nextBtn.onclick = function() {
-                quickUpdateStatus(order.id, 'da_xac_nhan');
-                closeOrderDrawer();
-            };
-            actionBtns.appendChild(nextBtn);
-        } else if (order.trang_thai === 'da_xac_nhan') {
-            const shipBtn = document.createElement('button');
-            shipBtn.className = "px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1";
-            shipBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">local_shipping</span><span>Giao Hàng Bưu Cục</span>`;
-            shipBtn.onclick = function() {
-                quickUpdateStatus(order.id, 'dang_giao');
-                closeOrderDrawer();
-            };
-            actionBtns.appendChild(shipBtn);
-        } else if (order.trang_thai === 'dang_giao') {
-            const completeBtn = document.createElement('button');
-            completeBtn.className = "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1";
-            completeBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">verified</span><span>Hoàn Tất Giao Đơn</span>`;
-            completeBtn.onclick = function() {
-                quickUpdateStatus(order.id, 'hoan_thanh');
-                closeOrderDrawer();
-            };
-            actionBtns.appendChild(completeBtn);
-        }
+        renderDrawerActionButtons(order.id, order.trang_thai);
 
         loading.classList.add('hidden');
         content.classList.remove('hidden');

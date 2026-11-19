@@ -11,7 +11,8 @@ class Book extends Model {
         $sql = "SELECT s.*, tl.ten AS the_loai_ten, nxb.ten AS nxb_ten,
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 5.0) AS diem_sao,
-                       COUNT(DISTINCT dg.id) AS so_danh_gia
+                       COUNT(DISTINCT dg.id) AS so_danh_gia,
+                       COALESCE(s.luot_ban, 0) AS da_ban
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
@@ -31,21 +32,20 @@ class Book extends Model {
     }
 
     /**
-     * Lấy sách bán chạy theo thể loại hoặc tất cả
+     * Lấy sách bán chạy theo thể loại hoặc tất cả (Sắp xếp theo số lượt bán thực tế luot_ban DESC)
      */
     public function getBestsellers(int $limit = 5, ?int $theLoaiId = null): array {
         $sql = "SELECT s.*, tl.ten AS the_loai_ten, nxb.ten AS nxb_ten,
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 4.8) AS diem_sao,
                        COUNT(DISTINCT dg.id) AS so_danh_gia,
-                       COALESCE(SUM(ctdh.so_luong), 0) AS da_ban
+                       COALESCE(s.luot_ban, 0) AS da_ban
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
                 LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
                 LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
                 LEFT JOIN `danh_gia` dg ON s.id = dg.sach_id AND dg.trang_thai = 'hien_thi'
-                LEFT JOIN `chi_tiet_don_hang` ctdh ON s.id = ctdh.sach_id
                 WHERE s.dang_ban = 1";
 
         $params = [];
@@ -54,7 +54,7 @@ class Book extends Model {
             $params[] = $theLoaiId;
         }
 
-        $sql .= " GROUP BY s.id ORDER BY da_ban DESC, s.id DESC LIMIT ?";
+        $sql .= " GROUP BY s.id ORDER BY s.luot_ban DESC, s.id DESC LIMIT ?";
         
         $stmt = $this->db->prepare($sql);
         $idx = 1;
@@ -67,28 +67,65 @@ class Book extends Model {
     }
 
     /**
-     * Lấy sách Flash Deals
+     * Lấy sách Flash Deals (Ưu tiên các sách admin gán Flash Sale)
      */
     public function getFlashDeals(int $limit = 4): array {
+        // 1. Ưu tiên các sách có bật Flash Sale và thời gian kết thúc hợp lệ
         $sql = "SELECT s.*, tl.ten AS the_loai_ten, nxb.ten AS nxb_ten,
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 4.9) AS diem_sao,
-                       COUNT(DISTINCT dg.id) AS so_danh_gia
+                       COUNT(DISTINCT dg.id) AS so_danh_gia,
+                       COALESCE(s.luot_ban, 0) AS da_ban
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
                 LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
                 LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
                 LEFT JOIN `danh_gia` dg ON s.id = dg.sach_id AND dg.trang_thai = 'hien_thi'
-                WHERE s.dang_ban = 1
+                WHERE s.dang_ban = 1 AND s.is_flash_sale = 1 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW())
                 GROUP BY s.id
-                ORDER BY s.gia ASC, s.id ASC
+                ORDER BY s.id DESC
                 LIMIT ?";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(1, $limit, \PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll();
+        $deals = $stmt->fetchAll();
+
+        // 2. Nếu chưa đủ số lượng limit, bổ sung thêm các sách có giá tốt nhất
+        if (count($deals) < $limit) {
+            $existingIds = !empty($deals) ? array_column($deals, 'id') : [0];
+            $placeholders = implode(',', array_fill(0, count($existingIds), '?'));
+            $need = $limit - count($deals);
+
+            $sqlFallback = "SELECT s.*, tl.ten AS the_loai_ten, nxb.ten AS nxb_ten,
+                                   GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
+                                   COALESCE(AVG(dg.so_sao), 4.9) AS diem_sao,
+                                   COUNT(DISTINCT dg.id) AS so_danh_gia,
+                                   COALESCE(s.luot_ban, 0) AS da_ban
+                            FROM `sach` s
+                            LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
+                            LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
+                            LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
+                            LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                            LEFT JOIN `danh_gia` dg ON s.id = dg.sach_id AND dg.trang_thai = 'hien_thi'
+                            WHERE s.dang_ban = 1 AND s.id NOT IN ($placeholders)
+                            GROUP BY s.id
+                            ORDER BY s.gia ASC
+                            LIMIT ?";
+
+            $stmtFb = $this->db->prepare($sqlFallback);
+            $idx = 1;
+            foreach ($existingIds as $eid) {
+                $stmtFb->bindValue($idx++, $eid, \PDO::PARAM_INT);
+            }
+            $stmtFb->bindValue($idx, $need, \PDO::PARAM_INT);
+            $stmtFb->execute();
+            $fallback = $stmtFb->fetchAll();
+            $deals = array_merge($deals, $fallback);
+        }
+
+        return $deals;
     }
 
     /**
@@ -99,7 +136,7 @@ class Book extends Model {
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 5.0) AS diem_sao,
                        COUNT(DISTINCT dg.id) AS so_danh_gia,
-                       COALESCE(SUM(ctdh.so_luong), 0) AS da_ban
+                       COALESCE(s.luot_ban, 0) AS da_ban
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
@@ -114,6 +151,23 @@ class Book extends Model {
         $book = $this->fetchOne($sql, [$id]);
         if (!$book) {
             return null;
+        }
+
+        // Kiểm tra xem sách có Flash Sale đang diễn ra trong bảng flash_sale hoặc bảng sach không
+        $fsActive = $this->fetchOne(
+            "SELECT * FROM `flash_sale` WHERE `sach_id` = ? AND `bat_dau` <= NOW() AND `ket_thuc` > NOW() ORDER BY `gia_sale` ASC LIMIT 1",
+            [$id]
+        );
+        if ($fsActive) {
+            $book['is_flash_sale'] = 1;
+            $book['gia_flash_sale'] = (float)$fsActive['gia_sale'];
+            $book['flash_sale_end'] = $fsActive['ket_thuc'];
+        } elseif (!empty($book['is_flash_sale']) && (float)($book['gia_flash_sale'] ?? 0) > 0 && (empty($book['flash_sale_end']) || strtotime($book['flash_sale_end']) > time())) {
+            $book['is_flash_sale'] = 1;
+            $book['gia_flash_sale'] = (float)$book['gia_flash_sale'];
+        } else {
+            $book['is_flash_sale'] = 0;
+            $book['gia_flash_sale'] = null;
         }
 
         // Lấy danh sách các tác giả chi tiết
@@ -276,7 +330,7 @@ class Book extends Model {
                 $sortOrder = "s.gia DESC";
                 break;
             case 'ban_chay':
-                $sortOrder = "da_ban DESC, s.id DESC";
+                $sortOrder = "s.luot_ban DESC, da_ban DESC, s.id DESC";
                 break;
             case 'danh_gia':
                 $sortOrder = "diem_sao DESC, s.id DESC";
@@ -293,7 +347,7 @@ class Book extends Model {
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 5.0) AS diem_sao,
                        COUNT(DISTINCT dg.id) AS so_danh_gia,
-                       COALESCE(SUM(ctdh.so_luong), 0) AS da_ban
+                       COALESCE(s.luot_ban, 0) AS da_ban
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
@@ -412,12 +466,29 @@ class Book extends Model {
                        tl.ten AS the_loai_ten,
                        nxb.ten AS nxb_ten,
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
-                       GROUP_CONCAT(DISTINCT tg.id SEPARATOR ',') AS tac_gia_ids
+                       GROUP_CONCAT(DISTINCT tg.id SEPARATOR ',') AS tac_gia_ids,
+                       COALESCE(fs.gia_sale, s.gia_flash_sale) AS effective_flash_sale_price,
+                       fs.bat_dau AS flash_sale_start,
+                       COALESCE(fs.ket_thuc, s.flash_sale_end) AS effective_flash_sale_end,
+                       CASE 
+                           WHEN fs.id IS NOT NULL AND fs.ket_thuc >= NOW() THEN 1 
+                           WHEN s.is_flash_sale = 1 AND (s.flash_sale_end IS NULL OR s.flash_sale_end >= NOW()) THEN 1 
+                           ELSE 0 
+                       END AS is_flash_sale_active
                 FROM `sach` s
                 LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                 LEFT JOIN `nha_xuat_ban` nxb ON s.nxb_id = nxb.id
                 LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
                 LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                LEFT JOIN (
+                    SELECT fs1.* FROM flash_sale fs1
+                    JOIN (
+                        SELECT sach_id, MAX(id) as max_id 
+                        FROM flash_sale 
+                        WHERE ket_thuc >= NOW() 
+                        GROUP BY sach_id
+                    ) latest ON fs1.id = latest.max_id
+                ) fs ON fs.sach_id = s.id
                 WHERE $whereClause
                 GROUP BY s.id
                 ORDER BY s.id DESC
@@ -472,8 +543,8 @@ class Book extends Model {
         try {
             $this->beginTransaction();
 
-            $sql = "INSERT INTO `sach` (`tieu_de`, `gia`, `mo_ta`, `anh_bia`, `so_trang`, `nam_xuat_ban`, `so_luong_ton`, `the_loai_id`, `nxb_id`, `dang_ban`)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `sach` (`tieu_de`, `gia`, `mo_ta`, `anh_bia`, `so_trang`, `nam_xuat_ban`, `so_luong_ton`, `the_loai_id`, `nxb_id`, `dang_ban`, `is_flash_sale`, `gia_flash_sale`, `flash_sale_end`)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -486,7 +557,10 @@ class Book extends Model {
                 (int)($data['so_luong_ton'] ?? 0),
                 !empty($data['the_loai_id']) ? (int)$data['the_loai_id'] : null,
                 !empty($data['nxb_id']) ? (int)$data['nxb_id'] : null,
-                isset($data['dang_ban']) ? (int)$data['dang_ban'] : 1
+                isset($data['dang_ban']) ? (int)$data['dang_ban'] : 1,
+                !empty($data['is_flash_sale']) ? 1 : 0,
+                !empty($data['gia_flash_sale']) ? (float)$data['gia_flash_sale'] : null,
+                !empty($data['flash_sale_end']) ? $data['flash_sale_end'] : null
             ]);
             $bookId = (int)$this->db->lastInsertId();
 
@@ -558,6 +632,21 @@ class Book extends Model {
                 $params[] = $data['anh_bia'];
             }
 
+            if (isset($data['is_flash_sale'])) {
+                $fields[] = 'is_flash_sale = ?';
+                $params[] = !empty($data['is_flash_sale']) ? 1 : 0;
+            }
+
+            if (array_key_exists('gia_flash_sale', $data)) {
+                $fields[] = 'gia_flash_sale = ?';
+                $params[] = (!empty($data['gia_flash_sale']) && (float)$data['gia_flash_sale'] > 0) ? (float)$data['gia_flash_sale'] : null;
+            }
+
+            if (array_key_exists('flash_sale_end', $data)) {
+                $fields[] = 'flash_sale_end = ?';
+                $params[] = !empty($data['flash_sale_end']) ? $data['flash_sale_end'] : null;
+            }
+
             $params[] = $id;
             $sql = "UPDATE `sach` SET " . implode(', ', $fields) . " WHERE `id` = ?";
             $stmt = $this->db->prepare($sql);
@@ -590,6 +679,19 @@ class Book extends Model {
     public function toggleStatus(int $id): bool {
         $sql = "UPDATE `sach` SET `dang_ban` = 1 - `dang_ban` WHERE `id` = ?";
         return $this->execute($sql, [$id]);
+    }
+
+    /**
+     * Cập nhật nhanh cài đặt Flash Sale cho sách
+     */
+    public function updateFlashSale(int $id, int $isFlashSale, ?float $flashPrice = null, ?string $endTime = null): bool {
+        $sql = "UPDATE `sach` SET `is_flash_sale` = ?, `gia_flash_sale` = ?, `flash_sale_end` = ? WHERE `id` = ?";
+        return $this->execute($sql, [
+            $isFlashSale ? 1 : 0,
+            ($isFlashSale && $flashPrice > 0) ? $flashPrice : null,
+            ($isFlashSale && !empty($endTime)) ? $endTime : null,
+            $id
+        ]);
     }
 
     /**
@@ -628,5 +730,18 @@ class Book extends Model {
             }
             throw $e;
         }
+    }
+
+    /**
+     * Lấy danh sách sách gọn cho dropdown (flash sale admin)
+     */
+    public function getAllForAdmin(int $limit = 500): array {
+        return $this->fetchAll(
+            "SELECT id, tieu_de, gia, anh_bia, so_luong_ton
+             FROM sach
+             ORDER BY tieu_de ASC
+             LIMIT :lim",
+            [':lim' => $limit]
+        );
     }
 }

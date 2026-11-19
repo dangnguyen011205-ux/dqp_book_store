@@ -12,7 +12,7 @@ foreach ($it as $file) {
         }
         $out = [];
         $code = 0;
-        exec('php -l ' . escapeshellarg($path), $out, $code);
+        exec('"C:\\xampp\\php\\php.exe" -l ' . escapeshellarg($path), $out, $code);
         if ($code !== 0) {
             echo "LINT ERROR: " . $path . "\n" . implode("\n", $out) . "\n";
             $errors++;

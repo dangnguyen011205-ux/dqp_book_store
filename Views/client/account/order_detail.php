@@ -274,6 +274,13 @@ if (!empty($order['history'])) {
                         </span>
                     </div>
 
+                    <?php if ((float)($order['tien_giam_ship'] ?? 0) > 0): ?>
+                        <div class="flex justify-between text-emerald-600 font-semibold">
+                            <span>Giảm phí vận chuyển (<?= htmlspecialchars($order['ma_freeship'] ?? 'Freeship') ?>):</span>
+                            <span>-<?= format_currency($order['tien_giam_ship']) ?></span>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="pt-2 border-t border-surface-container flex justify-between text-base font-bold text-primary">
                         <span>Tổng Thanh Toán:</span>
                         <span class="text-lg text-secondary"><?= format_currency($order['tong_thanh_toan']) ?></span>

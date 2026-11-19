@@ -112,6 +112,10 @@ class BookController extends Controller {
             $reviewBlockReason = 'Vui lòng đăng nhập tài khoản đã mua sách để gửi nhận xét.';
         }
 
+        // Lấy danh sách thống nhất toàn bộ Voucher / Mã giảm giá khả dụng
+        $couponModel = new \Models\Coupon();
+        $coupons = $couponModel->getUnifiedCoupons(Auth::check() ? Auth::id() : null);
+
         $this->view('client.detail', [
             'title'             => htmlspecialchars($book['tieu_de']) . ' | ' . APP_NAME,
             'book'              => $book,
@@ -120,7 +124,8 @@ class BookController extends Controller {
             'ratingSummary'     => $ratingSummary,
             'canReview'         => $canReview,
             'hasReviewed'       => $hasReviewed,
-            'reviewBlockReason' => $reviewBlockReason
+            'reviewBlockReason' => $reviewBlockReason,
+            'coupons'           => $coupons
         ]);
     }
 
@@ -153,16 +158,16 @@ class BookController extends Controller {
                 redirect('chi-tiet/' . $bookId . '#reviews-section');
             }
 
-            // Tạo đánh giá (chờ duyệt)
+            // Tạo đánh giá (đăng công khai ngay, không cần chờ duyệt)
             $this->reviewModel->create([
                 'nguoi_dung_id' => $userId,
                 'sach_id'       => $bookId,
                 'so_sao'        => $soSao,
                 'noi_dung'      => $noiDung,
-                'trang_thai'    => 'cho_duyet'
+                'trang_thai'    => 'hien_thi'
             ]);
 
-            flash('success', 'Cảm ơn bạn đã gửi cảm nhận! Nhận xét của bạn sẽ được hiển thị sau khi ban quản trị phê duyệt.');
+            flash('success', 'Cảm ơn bạn đã gửi cảm nhận! Đánh giá của bạn đã được đăng thành công.');
             redirect('chi-tiet/' . $bookId . '#reviews-section');
         }
 

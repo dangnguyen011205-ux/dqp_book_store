@@ -293,9 +293,21 @@
                                     <!-- Giá Bán -->
                                     <td class="py-3 px-4 whitespace-nowrap">
                                         <div class="font-black text-primary"><?= format_currency($book['gia']) ?></div>
+                                        <?php 
+                                            $isFs = !empty($book['is_flash_sale_active']) || !empty($book['is_flash_sale']);
+                                            $fsPrice = !empty($book['effective_flash_sale_price']) ? (float)$book['effective_flash_sale_price'] : (float)($book['gia_flash_sale'] ?? 0);
+                                            $fsStart = !empty($book['flash_sale_start']) ? date('Y-m-d\TH:i', strtotime($book['flash_sale_start'])) : '';
+                                            $fsEnd = !empty($book['effective_flash_sale_end']) ? date('Y-m-d\TH:i', strtotime($book['effective_flash_sale_end'])) : (!empty($book['flash_sale_end']) ? date('Y-m-d\TH:i', strtotime($book['flash_sale_end'])) : '');
+                                        ?>
+                                        <?php if ($isFs && $fsPrice > 0): ?>
+                                            <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700 mt-1">
+                                                <span class="material-symbols-outlined text-[12px]">bolt</span>
+                                                Flash: <?= format_currency($fsPrice) ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
 
-                                    <!-- Tồn Kho -->
+                                    <!-- Tồn Kho & Lượt Bán -->
                                     <td class="py-3 px-4 whitespace-nowrap">
                                         <div class="flex items-center gap-1.5">
                                             <?php if ($isOut): ?>
@@ -310,6 +322,12 @@
                                                 <span class="font-bold text-secondary"><?= number_format($book['so_luong_ton']) ?></span>
                                                 <span class="text-slate-400 text-[11px]">cuốn</span>
                                             <?php endif; ?>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-1 text-[11px] text-slate-500 font-semibold mt-1">
+                                            <span class="flex items-center gap-0.5">
+                                                <span class="material-symbols-outlined text-[13px] text-amber-600">shopping_bag</span>
+                                                <span>Đã bán: <strong class="text-primary font-bold"><?= number_format($book['luot_ban'] ?? 0) ?></strong></span>
+                                            </span>
                                         </div>
                                         <span class="text-[10px] <?= $isLowStock ? 'text-rose-600 font-bold' : 'text-slate-400' ?> block">
                                             <?= $isLowStock ? 'Cần nhập hàng' : 'Tồn an toàn' ?>
@@ -332,6 +350,13 @@
                                     <!-- Thao Tác -->
                                     <td class="py-3 px-4 whitespace-nowrap text-right">
                                         <div class="inline-flex items-center gap-1">
+                                            <!-- Cài đặt Flash Sale -->
+                                            <button type="button" class="p-1.5 rounded-lg <?= $isFs ? 'text-rose-600 bg-rose-50 hover:bg-rose-100 ring-1 ring-rose-300' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' ?> transition-colors" 
+                                                    onclick="openFlashSaleModal(<?= $book['id'] ?>, '<?= htmlspecialchars(addslashes($book['tieu_de'])) ?>', <?= (float)$book['gia'] ?>, <?= $isFs ? 1 : 0 ?>, <?= $fsPrice ?>, '<?= $fsStart ?>', '<?= $fsEnd ?>')" 
+                                                    title="Cài đặt Flash Sale giờ vàng (Đồng bộ Mục Flash Sale)">
+                                                <span class="material-symbols-outlined text-[18px]">bolt</span>
+                                            </button>
+
                                             <!-- Nhập kho nhanh -->
                                             <button class="p-1.5 rounded-lg text-secondary hover:bg-secondary-fixed/50 transition-colors" 
                                                     onclick="openQuickSlipModal(<?= $book['id'] ?>, '<?= htmlspecialchars(addslashes($book['tieu_de'])) ?>', <?= (int)$book['so_luong_ton'] ?>)" 
@@ -667,6 +692,27 @@
                         </div>
                     </div>
 
+                    <!-- Flash Sale Giờ Vàng -->
+                    <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 flex flex-col gap-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="is_flash_sale" value="1" id="add_is_flash_sale" class="rounded text-rose-600 focus:ring-rose-500 w-4 h-4" onchange="document.getElementById('add_flash_sale_fields').classList.toggle('hidden', !this.checked)">
+                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-rose-600">bolt</span>
+                                Kích hoạt Flash Sale giờ vàng
+                            </span>
+                        </label>
+                        <div id="add_flash_sale_fields" class="hidden grid grid-cols-2 gap-2 pt-1">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[11px] font-bold text-slate-700">Giá Flash Sale (₫)</label>
+                                <input name="gia_flash_sale" type="number" min="0" step="1000" placeholder="Giá giảm đặc biệt" class="w-full px-3 py-2 rounded-lg bg-white border border-amber-300 text-xs"/>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[11px] font-bold text-slate-700">Thời gian kết thúc</label>
+                                <input name="flash_sale_end" type="datetime-local" class="w-full px-3 py-2 rounded-lg bg-white border border-amber-300 text-xs"/>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Mô tả tóm tắt nội dung -->
                     <div class="sm:col-span-2 flex flex-col gap-1">
                         <label class="text-xs font-bold text-primary">Mô tả tóm tắt nội dung sách (`mo_ta`)</label>
@@ -791,6 +837,27 @@
                                 <input id="edit-status-stopped" name="dang_ban" value="0" type="radio" class="text-secondary focus:ring-secondary"/>
                                 <span>Ngừng bán</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- Flash Sale Options -->
+                    <div class="sm:col-span-2 p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 flex flex-col gap-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="is_flash_sale" value="1" id="edit_is_flash_sale" class="rounded text-rose-600 focus:ring-rose-500 w-4 h-4" onchange="document.getElementById('edit_flash_sale_fields').classList.toggle('hidden', !this.checked)">
+                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-rose-600">bolt</span>
+                                Kích hoạt Flash Sale giờ vàng
+                            </span>
+                        </label>
+                        <div id="edit_flash_sale_fields" class="hidden grid grid-cols-2 gap-2 pt-1">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[11px] font-bold text-slate-700">Giá Flash Sale (₫)</label>
+                                <input id="edit_gia_flash_sale" name="gia_flash_sale" type="number" min="0" step="1000" placeholder="Giá giảm đặc biệt" class="w-full px-3 py-2 rounded-lg bg-white border border-amber-300 text-xs"/>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[11px] font-bold text-slate-700">Thời gian kết thúc</label>
+                                <input id="edit_flash_sale_end" name="flash_sale_end" type="datetime-local" class="w-full px-3 py-2 rounded-lg bg-white border border-amber-300 text-xs"/>
+                            </div>
                         </div>
                     </div>
 
@@ -932,6 +999,94 @@
 </div>
 
 <!-- ========================================================================= -->
+<!-- MODAL 4: CÀI ĐẶT FLASH SALE NHANH CHO SÁCH                               -->
+<!-- ========================================================================= -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/50 backdrop-blur-sm hidden" id="modal-quick-flash-sale">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-rose-50 border-b border-amber-100 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-sm">
+                    <span class="material-symbols-outlined text-[20px]">bolt</span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-900">Thiết Lập Flash Sale</h3>
+                    <p class="text-[11px] text-slate-500" id="qfs-book-title">Cấu hình giá giờ vàng và đếm ngược</p>
+                </div>
+            </div>
+            <button class="w-8 h-8 rounded-lg bg-white/80 hover:bg-white text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors" onclick="closeFlashSaleModal()" type="button">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="qfs-form" action="" method="POST" class="p-6 space-y-4">
+            <input type="hidden" id="qfs-book-id" name="book_id" value="">
+            <input type="hidden" id="qfs-orig-price" value="0">
+
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/60 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-amber-900 font-medium">Giá bán gốc:</span>
+                    <span class="text-xs font-bold text-amber-950 ml-1" id="qfs-display-price">0 ₫</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="qfs-is-active" name="is_flash_sale" value="1" class="sr-only peer" onchange="toggleQfsFields()">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                    <span class="ml-2 text-xs font-bold text-rose-700">Kích hoạt</span>
+                </label>
+            </div>
+
+            <div id="qfs-fields" class="space-y-3.5 transition-all">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Giá Flash Sale (₫) *</label>
+                    <input type="number" id="qfs-sale-price" name="gia_flash_sale" min="0" step="1000" placeholder="VD: 59000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    <div class="flex gap-1.5 mt-2">
+                        <button type="button" onclick="applyDiscountPercent(10)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">-10%</button>
+                        <button type="button" onclick="applyDiscountPercent(20)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">-20%</button>
+                        <button type="button" onclick="applyDiscountPercent(30)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">-30%</button>
+                        <button type="button" onclick="applyDiscountPercent(50)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">-50%</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Thời gian bắt đầu *</label>
+                    <input type="datetime-local" id="qfs-sale-start" name="flash_sale_start" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    <div class="flex gap-1.5 mt-2">
+                        <button type="button" onclick="setQfsStartNow()" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">Bắt đầu ngay</button>
+                        <button type="button" onclick="setQfsStartHours(1)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-700 font-medium transition-colors">Sau 1 giờ</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Thời gian kết thúc Flash Sale *</label>
+                    <input type="datetime-local" id="qfs-sale-end" name="flash_sale_end" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    <div class="flex gap-1.5 mt-2">
+                        <button type="button" onclick="setQfsDuration(6)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-amber-100 hover:text-amber-800 font-medium transition-colors">+6 giờ</button>
+                        <button type="button" onclick="setQfsDuration(24)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-amber-100 hover:text-amber-800 font-medium transition-colors">+24 giờ</button>
+                        <button type="button" onclick="setQfsDuration(72)" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-amber-100 hover:text-amber-800 font-medium transition-colors">+3 ngày</button>
+                    </div>
+                </div>
+
+                <div class="p-2.5 bg-rose-50/70 rounded-xl border border-rose-100 text-[11px] text-rose-700 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px]">info</span>
+                    <span>Tự động đồng bộ ngay vào <strong>Mục Flash Sale</strong> và hiển thị tại <strong>Trang Chủ</strong> khách hàng.</span>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors" onclick="closeFlashSaleModal()" type="button">
+                    Đóng
+                </button>
+                <button class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all active:scale-95" type="submit">
+                    Lưu Flash Sale
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
 <!-- JAVASCRIPT LOGIC CHO TABS & MODALS                                        -->
 <!-- ========================================================================= -->
 <script>
@@ -1062,6 +1217,16 @@
                     document.getElementById('edit-status-stopped').checked = true;
                 }
 
+                // Flash Sale
+                const isFs = parseInt(data.is_flash_sale) === 1;
+                const fsCheck = document.getElementById('edit_is_flash_sale');
+                if (fsCheck) {
+                    fsCheck.checked = isFs;
+                    document.getElementById('edit_flash_sale_fields').classList.toggle('hidden', !isFs);
+                    document.getElementById('edit_gia_flash_sale').value = data.gia_flash_sale ? parseInt(data.gia_flash_sale) : '';
+                    document.getElementById('edit_flash_sale_end').value = data.flash_sale_end ? data.flash_sale_end.replace(' ', 'T').slice(0, 16) : '';
+                }
+
                 // Tác giả
                 const authorSelect = document.getElementById('edit-tac-gia-ids');
                 const authorIds = data.author_ids ? data.author_ids.map(id => parseInt(id)) : [];
@@ -1090,5 +1255,85 @@
             }
             reader.readAsDataURL(input.files[0]);
         }
+    }
+
+    // 5. Quản lý Modal Cài Đặt Flash Sale Nhanh
+    function openFlashSaleModal(bookId, bookTitle, currentPrice, isFlashSale, flashSalePrice, flashSaleStart, flashSaleEnd) {
+        const form = document.getElementById('qfs-form');
+        form.action = `<?= base_url('admin/sach/flash-sale/') ?>` + bookId;
+        document.getElementById('qfs-book-id').value = bookId;
+        document.getElementById('qfs-book-title').textContent = bookTitle + ` (#BK-${bookId})`;
+        document.getElementById('qfs-orig-price').value = currentPrice;
+        document.getElementById('qfs-display-price').textContent = new Intl.NumberFormat('vi-VN').format(currentPrice) + ' ₫';
+        
+        const activeCheck = document.getElementById('qfs-is-active');
+        activeCheck.checked = (parseInt(isFlashSale) === 1);
+        
+        document.getElementById('qfs-sale-price').value = flashSalePrice ? parseInt(flashSalePrice) : Math.round(currentPrice * 0.8);
+        
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatLocalDatetime = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+        if (flashSaleStart) {
+            document.getElementById('qfs-sale-start').value = flashSaleStart.replace(' ', 'T').slice(0, 16);
+        } else {
+            const now = new Date();
+            document.getElementById('qfs-sale-start').value = formatLocalDatetime(now);
+        }
+
+        if (flashSaleEnd) {
+            document.getElementById('qfs-sale-end').value = flashSaleEnd.replace(' ', 'T').slice(0, 16);
+        } else {
+            const d = new Date();
+            d.setHours(d.getHours() + 24);
+            document.getElementById('qfs-sale-end').value = formatLocalDatetime(d);
+        }
+        
+        toggleQfsFields();
+        document.getElementById('modal-quick-flash-sale').classList.remove('hidden');
+    }
+
+    function closeFlashSaleModal() {
+        document.getElementById('modal-quick-flash-sale').classList.add('hidden');
+    }
+
+    function toggleQfsFields() {
+        const active = document.getElementById('qfs-is-active').checked;
+        const fields = document.getElementById('qfs-fields');
+        if (active) {
+            fields.classList.remove('opacity-40', 'pointer-events-none');
+        } else {
+            fields.classList.add('opacity-40', 'pointer-events-none');
+        }
+    }
+
+    function applyDiscountPercent(pct) {
+        const orig = parseFloat(document.getElementById('qfs-orig-price').value) || 0;
+        if (orig > 0) {
+            const discounted = Math.round(orig * (100 - pct) / 100);
+            document.getElementById('qfs-sale-price').value = discounted;
+        }
+    }
+
+    function setQfsStartNow() {
+        const pad = (n) => String(n).padStart(2, '0');
+        const now = new Date();
+        document.getElementById('qfs-sale-start').value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    function setQfsStartHours(hours) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const d = new Date();
+        d.setHours(d.getHours() + hours);
+        document.getElementById('qfs-sale-start').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function setQfsDuration(hours) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const startVal = document.getElementById('qfs-sale-start').value;
+        const baseDate = startVal ? new Date(startVal) : new Date();
+        const d = new Date(baseDate.getTime());
+        d.setHours(d.getHours() + hours);
+        document.getElementById('qfs-sale-end').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 </script>

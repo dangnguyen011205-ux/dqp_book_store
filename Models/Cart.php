@@ -48,15 +48,39 @@ class Cart extends Model {
     public function getItems(?int $userId): array {
         if ($userId) {
             $cartId = $this->getOrCreateCartId($userId);
-            $sql = "SELECT ct.sach_id, ct.so_luong, s.tieu_de, s.gia, s.anh_bia, s.so_luong_ton, s.dang_ban,
+            $sql = "SELECT ct.sach_id, ct.so_luong, s.tieu_de, s.gia AS gia_goc, s.anh_bia, s.so_luong_ton, s.dang_ban,
                            tl.ten AS the_loai_ten,
                            GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
-                           (ct.so_luong * s.gia) AS thanh_tien
+                           CASE 
+                               WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                               WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                               ELSE s.gia
+                           END AS gia,
+                           CASE 
+                               WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                               WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                               ELSE NULL
+                           END AS gia_sale,
+                           (fs.id IS NOT NULL OR (s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()))) AS is_flash_sale,
+                           (ct.so_luong * (
+                               CASE 
+                                   WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                                   WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                                   ELSE s.gia
+                               END
+                           )) AS thanh_tien
                     FROM `chi_tiet_gio_hang` ct
                     JOIN `sach` s ON ct.sach_id = s.id
                     LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                     LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
                     LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                    LEFT JOIN `flash_sale` fs ON (
+                        fs.id = (
+                            SELECT fs2.id FROM `flash_sale` fs2 
+                            WHERE fs2.sach_id = s.id AND fs2.bat_dau <= NOW() AND fs2.ket_thuc > NOW() 
+                            ORDER BY fs2.gia_sale ASC LIMIT 1
+                        )
+                    )
                     WHERE ct.gio_hang_id = ? AND s.dang_ban = 1
                     GROUP BY ct.sach_id
                     ORDER BY s.id DESC";
@@ -69,13 +93,31 @@ class Cart extends Model {
             $bookIds = array_keys($_SESSION['cart']);
             if (!empty($bookIds)) {
                 $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-                $sql = "SELECT s.id AS sach_id, s.tieu_de, s.gia, s.anh_bia, s.so_luong_ton, s.dang_ban,
+                $sql = "SELECT s.id AS sach_id, s.tieu_de, s.gia AS gia_goc, s.anh_bia, s.so_luong_ton, s.dang_ban,
                                tl.ten AS the_loai_ten,
-                               GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten
+                               GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
+                               CASE 
+                                   WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                                   WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                                   ELSE s.gia
+                               END AS gia,
+                               CASE 
+                                   WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                                   WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                                   ELSE NULL
+                               END AS gia_sale,
+                               (fs.id IS NOT NULL OR (s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()))) AS is_flash_sale
                         FROM `sach` s
                         LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
                         LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
                         LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                        LEFT JOIN `flash_sale` fs ON (
+                            fs.id = (
+                                SELECT fs2.id FROM `flash_sale` fs2 
+                                WHERE fs2.sach_id = s.id AND fs2.bat_dau <= NOW() AND fs2.ket_thuc > NOW() 
+                                ORDER BY fs2.gia_sale ASC LIMIT 1
+                            )
+                        )
                         WHERE s.id IN ($placeholders) AND s.dang_ban = 1
                         GROUP BY s.id";
                 $books = $this->fetchAll($sql, $bookIds);
@@ -90,6 +132,51 @@ class Cart extends Model {
             }
         }
         return $items;
+    }
+
+    /**
+     * Lấy thông tin 1 sản phẩm duy nhất để phục vụ luồng MUA NGAY (không gộp giỏ hàng)
+     */
+    public function getSingleItemForCheckout(int $bookId, int $quantity = 1): ?array {
+        $sql = "SELECT s.id AS sach_id, s.tieu_de, s.gia AS gia_goc, s.anh_bia, s.so_luong_ton, s.dang_ban,
+                       tl.ten AS the_loai_ten,
+                       GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
+                       CASE 
+                           WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                           WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                           ELSE s.gia
+                       END AS gia,
+                       CASE 
+                           WHEN fs.id IS NOT NULL AND fs.gia_sale > 0 THEN fs.gia_sale
+                           WHEN s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()) THEN s.gia_flash_sale
+                           ELSE NULL
+                       END AS gia_sale,
+                       (fs.id IS NOT NULL OR (s.is_flash_sale = 1 AND s.gia_flash_sale > 0 AND (s.flash_sale_end IS NULL OR s.flash_sale_end > NOW()))) AS is_flash_sale
+                FROM `sach` s
+                LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
+                LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
+                LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                LEFT JOIN `flash_sale` fs ON (
+                    fs.id = (
+                        SELECT fs2.id FROM `flash_sale` fs2 
+                        WHERE fs2.sach_id = s.id AND fs2.bat_dau <= NOW() AND fs2.ket_thuc > NOW() 
+                        ORDER BY fs2.gia_sale ASC LIMIT 1
+                    )
+                )
+                WHERE s.id = ? AND s.dang_ban = 1
+                GROUP BY s.id
+                LIMIT 1";
+
+        $row = $this->fetchOne($sql, [$bookId]);
+        if (!$row) return null;
+
+        $stock = (int)$row['so_luong_ton'];
+        if ($stock <= 0) return null;
+
+        $qty = max(1, min((int)$quantity, $stock));
+        $row['so_luong'] = $qty;
+        $row['thanh_tien'] = $qty * (float)$row['gia'];
+        return $row;
     }
 
     /**

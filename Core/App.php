@@ -28,6 +28,10 @@ class App
         'tai-khoan/don-hang' => ['AccountController', 'orders'],
         'lich-su-don-hang' => ['AccountController', 'orders'],
         'tai-khoan/don-hang/huy/(\d+)' => ['AccountController', 'cancelOrder'],
+        'tai-khoan/vi-voucher' => ['AccountController', 'vouchers'],
+        'tai-khoan/voucher' => ['AccountController', 'vouchers'],
+        'tai-khoan/luu-voucher' => ['AccountController', 'claimVoucher'],
+        'vi-voucher' => ['AccountController', 'vouchers'],
 
         // Khách hàng - Sách & Tìm kiếm
         'tim-kiem' => ['BookController', 'index'],
@@ -61,12 +65,15 @@ class App
         // Admin Dashboard & Quản lý
         'admin' => ['AdminDashboardController', 'index'],
         'tong-quan-quan-tri' => ['AdminDashboardController', 'index'],
+        'admin/dashboard/chart-data' => ['AdminDashboardController', 'chartData'],
+        'admin/dashboard/orders-by-date' => ['AdminDashboardController', 'ordersByDate'],
         'admin/sach' => ['AdminBookController', 'index'],
         'quan-ly-kho-sach' => ['AdminBookController', 'index'],
         'admin/sach/them' => ['AdminBookController', 'create'],
         'admin/sach/sua/(\d+)' => ['AdminBookController', 'edit'],
         'admin/sach/xoa/(\d+)' => ['AdminBookController', 'delete'],
         'admin/sach/toggle-status/(\d+)' => ['AdminBookController', 'toggleStatus'],
+        'admin/sach/flash-sale/(\d+)' => ['AdminBookController', 'saveFlashSale'],
 
         'admin/kho' => ['AdminInventoryController', 'index'],
         'admin/kho/tao-phieu' => ['AdminInventoryController', 'createSlip'],
@@ -111,6 +118,17 @@ class App
         'admin/ma-giam-gia/sua/(\d+)' => ['AdminCouponController', 'edit'],
         'admin/ma-giam-gia/xoa/(\d+)' => ['AdminCouponController', 'delete'],
 
+        'admin/quang-cao' => ['AdminAdvertisementController', 'index'],
+        'admin/quang-cao/them' => ['AdminAdvertisementController', 'create'],
+        'admin/quang-cao/chi-tiet/(\d+)' => ['AdminAdvertisementController', 'detail'],
+        'admin/quang-cao/sua/(\d+)' => ['AdminAdvertisementController', 'edit'],
+        'admin/quang-cao/xoa/(\d+)' => ['AdminAdvertisementController', 'delete'],
+        'admin/quang-cao/toggle-status/(\d+)' => ['AdminAdvertisementController', 'toggleStatus'],
+
+        'voucher/luu' => ['HomeController', 'saveVoucher'],
+        'voucher/luu/(\d+)' => ['HomeController', 'saveVoucher'],
+        'flash-sale/status' => ['HomeController', 'flashSaleStatus'],
+
         'admin/nguoi-dung' => ['AdminUserController', 'index'],
         'quan-ly-khach-hang' => ['AdminUserController', 'index'],
         'admin/nguoi-dung/them' => ['AdminUserController', 'create'],
@@ -118,6 +136,14 @@ class App
         'admin/nguoi-dung/chi-tiet/(\d+)' => ['AdminUserController', 'detail'],
         'admin/nguoi-dung/sua/(\d+)' => ['AdminUserController', 'update'],
         'admin/nguoi-dung/vai-tro/(\d+)' => ['AdminUserController', 'changeRole'],
+
+        // Flash Sale
+        'admin/flash-sale' => ['AdminFlashSaleController', 'index'],
+        'quan-ly-flash-sale' => ['AdminFlashSaleController', 'index'],
+        'admin/flash-sale/them' => ['AdminFlashSaleController', 'create'],
+        'admin/flash-sale/sua/(\d+)' => ['AdminFlashSaleController', 'edit'],
+        'admin/flash-sale/xoa/(\d+)' => ['AdminFlashSaleController', 'delete'],
+        'admin/flash-sale/ajax-list' => ['AdminFlashSaleController', 'ajaxList'],
     ];
 
     public function __construct()

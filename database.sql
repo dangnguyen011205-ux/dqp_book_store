@@ -56,6 +56,10 @@ CREATE TABLE `sach` (
     `so_trang` INT DEFAULT NULL,
     `nam_xuat_ban` INT DEFAULT NULL,
     `so_luong_ton` INT NOT NULL DEFAULT 0,
+    `luot_ban` INT NOT NULL DEFAULT 0,
+    `is_flash_sale` TINYINT(1) NOT NULL DEFAULT 0,
+    `gia_flash_sale` DECIMAL(12, 2) DEFAULT NULL,
+    `flash_sale_end` DATETIME DEFAULT NULL,
     `the_loai_id` INT DEFAULT NULL,
     `nxb_id` INT DEFAULT NULL,
     `dang_ban` TINYINT(1) NOT NULL DEFAULT 1,
@@ -111,8 +115,11 @@ CREATE TABLE `chi_tiet_gio_hang` (
 CREATE TABLE `ma_giam_gia` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `ma` VARCHAR(50) NOT NULL UNIQUE,
+    `tieu_de` VARCHAR(255) DEFAULT NULL,
+    `loai_voucher` ENUM('giam_gia', 'mien_phi_van_chuyen') NOT NULL DEFAULT 'giam_gia',
     `loai` ENUM('phan_tram', 'tien_mat') NOT NULL,
     `gia_tri` DECIMAL(12, 2) NOT NULL,
+    `giam_toi_da` DECIMAL(12, 2) DEFAULT NULL,
     `don_toi_thieu` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `bat_dau` DATETIME NOT NULL,
     `ket_thuc` DATETIME NOT NULL,
@@ -124,10 +131,12 @@ CREATE TABLE `don_hang` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `nguoi_dung_id` INT NOT NULL,
     `ma_giam_gia_id` INT DEFAULT NULL,
+    `ma_freeship_id` INT DEFAULT NULL,
     `nguoi_nhan` VARCHAR(100) NOT NULL,
     `dia_chi_giao` VARCHAR(255) NOT NULL,
     `tong_tien_hang` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `tien_giam` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    `tien_giam_ship` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `phi_van_chuyen` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `tong_thanh_toan` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `trang_thai` ENUM('cho_xac_nhan', 'da_xac_nhan', 'dang_giao', 'hoan_thanh', 'da_huy') 
@@ -136,6 +145,8 @@ CREATE TABLE `don_hang` (
     CONSTRAINT `fk_don_hang_nguoi_dung` FOREIGN KEY (`nguoi_dung_id`) 
         REFERENCES `nguoi_dung` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT `fk_don_hang_ma_giam_gia` FOREIGN KEY (`ma_giam_gia_id`) 
+        REFERENCES `ma_giam_gia` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_don_hang_ma_freeship` FOREIGN KEY (`ma_freeship_id`) 
         REFERENCES `ma_giam_gia` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -304,3 +315,54 @@ INSERT INTO `lich_su_don_hang` (`id`, `don_hang_id`, `trang_thai`, `ghi_chu`, `t
 INSERT INTO `danh_gia` (`id`, `nguoi_dung_id`, `sach_id`, `so_sao`, `noi_dung`, `trang_thai`, `ngay_tao`) VALUES
 (1, 2, 1, 5, 'Sách bìa đẹp, đóng gói cẩn thận, nội dung rất ý nghĩa và xúc động!', 'hien_thi', '2026-10-04 14:00:00'),
 (2, 2, 2, 4, 'Truyện rất buồn nhưng đậm tính nhân văn, giao hàng nhanh.', 'hien_thi', '2026-10-04 14:05:00');
+
+-- 17. Quảng cáo kèm voucher
+CREATE TABLE `quang_cao` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tieu_de` varchar(255) NOT NULL,
+  `phu_de` varchar(255) DEFAULT NULL,
+  `noi_dung` text DEFAULT NULL,
+  `anh_banner` varchar(255) DEFAULT NULL,
+  `ma_giam_gia_id` int(11) DEFAULT NULL,
+  `so_luot_luu_toi_da` int(11) NOT NULL DEFAULT 0,
+  `mau_chu_dao` varchar(100) DEFAULT 'from-amber-600 to-rose-700',
+  `link_dieu_huong` varchar(255) DEFAULT 'sach',
+  `trang_thai` tinyint(1) NOT NULL DEFAULT 1,
+  `bat_dau` datetime DEFAULT NULL,
+  `ket_thuc` datetime DEFAULT NULL,
+  `thu_tu` int(11) NOT NULL DEFAULT 0,
+  `ngay_tao` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_quang_cao_ma_giam_gia` (`ma_giam_gia_id`),
+  CONSTRAINT `fk_quang_cao_ma_giam_gia` FOREIGN KEY (`ma_giam_gia_id`) REFERENCES `ma_giam_gia` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 18. Lưu voucher người dùng
+CREATE TABLE `voucher_nguoi_dung` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nguoi_dung_id` int(11) NOT NULL,
+  `ma_giam_gia_id` int(11) NOT NULL,
+  `ngay_luu` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `trang_thai` enum('chua_dung','da_dung') NOT NULL DEFAULT 'chua_dung',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_coupon` (`nguoi_dung_id`,`ma_giam_gia_id`),
+  KEY `fk_vnd_nguoi_dung` (`nguoi_dung_id`),
+  KEY `fk_vnd_ma_giam_gia` (`ma_giam_gia_id`),
+  CONSTRAINT `fk_vnd_ma_giam_gia` FOREIGN KEY (`ma_giam_gia_id`) REFERENCES `ma_giam_gia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_vnd_nguoi_dung` FOREIGN KEY (`nguoi_dung_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 19. Flash Sale
+CREATE TABLE IF NOT EXISTS `flash_sale` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `sach_id` INT NOT NULL,
+  `gia_sale` DECIMAL(12,2) NOT NULL,
+  `bat_dau` DATETIME NOT NULL,
+  `ket_thuc` DATETIME NOT NULL,
+  `created_by` INT DEFAULT NULL,
+  `ngay_tao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_flash_sale_sach` FOREIGN KEY (`sach_id`) REFERENCES `sach`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  INDEX `idx_flash_bat_dau` (`bat_dau`),
+  INDEX `idx_flash_ket_thuc` (`ket_thuc`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

@@ -13,24 +13,17 @@
                     <span>Bảng điều khiển</span>
                 </a>
                 <span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
-                <span class="text-primary font-bold">Duyệt Đánh Giá</span>
+                <span class="text-primary font-bold">Quản Lý Đánh Giá</span>
                 <span class="ml-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">CSDL: danh_gia</span>
             </nav>
             <div class="flex items-baseline gap-2 mt-0.5">
-                <h1 class="text-2xl lg:text-3xl font-extrabold text-primary tracking-tight">Quản Lý &amp; Duyệt Đánh Giá Khách Hàng</h1>
-                <?php if ($stats['pending_reviews'] > 0): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold animate-pulse">
-                        <span class="w-2 h-2 rounded-full bg-amber-600"></span>
-                        <?= $stats['pending_reviews'] ?> cần duyệt gấp
-                    </span>
-                <?php else: ?>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                        <span class="material-symbols-outlined text-[14px]">check_circle</span> Đã xử lý hết
-                    </span>
-                <?php endif; ?>
+                <h1 class="text-2xl lg:text-3xl font-extrabold text-primary tracking-tight">Quản Lý Đánh Giá Khách Hàng</h1>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">
+                    <span class="material-symbols-outlined text-[14px]">reviews</span> <?= number_format($stats['total_reviews']) ?> đánh giá
+                </span>
             </div>
             <p class="text-xs text-on-surface-variant">
-                Kiểm duyệt bình luận, đánh giá sao của độc giả trước khi công khai trên sàn BookStore nhằm đảm bảo tính chân thực và văn minh.
+                Quản lý các phản hồi và đánh giá sao của độc giả. Bạn có thể ẩn các đánh giá không phù hợp, bỏ ẩn hoặc xóa vĩnh viễn.
             </p>
         </div>
 
@@ -49,28 +42,24 @@
 
     <!-- 2. KPI Metric Cards (4 Bento Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- KPI 1: Đánh giá Chờ Duyệt -->
+        <!-- KPI 1: Tổng Đánh Giá -->
         <div class="relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm border border-slate-100 transition-all duration-300 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Đánh giá Chờ Duyệt</span>
-                <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800">
-                    <span class="material-symbols-outlined text-[18px]">pending_actions</span>
+                <span class="text-[11px] font-bold text-primary uppercase tracking-wider">Tổng Đánh Giá</span>
+                <span class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-[18px]">rate_review</span>
                 </span>
             </div>
             <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-black text-amber-600"><?= number_format($stats['pending_reviews']) ?></span>
-                <?php if ($stats['pending_reviews'] > 0): ?>
-                    <span class="text-[11px] text-amber-700 font-bold">Cần xử lý sớm</span>
-                <?php else: ?>
-                    <span class="text-[11px] text-emerald-600 font-bold">Tồn đọng: 0</span>
-                <?php endif; ?>
+                <span class="text-3xl font-black text-primary"><?= number_format($stats['total_reviews']) ?></span>
+                <span class="text-[11px] text-slate-500 font-bold">toàn hệ thống</span>
             </div>
             <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-on-surface-variant">
-                <span>Ưu tiên kiểm duyệt:</span>
-                <span class="font-bold text-primary"><?= $stats['pending_reviews'] > 0 ? 'Có bản ghi mới' : 'Đã sạch hàng đợi' ?></span>
+                <span>Trạng thái hoạt động:</span>
+                <span class="font-bold text-emerald-600">Đăng tức thì</span>
             </div>
             <div class="w-full bg-slate-100 h-1 rounded-full mt-3 overflow-hidden">
-                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: <?= min(100, max(10, $stats['pending_reviews'] * 20)) ?>%"></div>
+                <div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 100%"></div>
             </div>
         </div>
 
@@ -164,18 +153,14 @@
                 <?php
                 $tabItems = [
                     'tat_ca'    => ['label' => 'Tất cả',           'count' => $counts['status']['tat_ca'],    'badgeBg' => 'bg-slate-200 text-slate-800'],
-                    'cho_duyet' => ['label' => 'Chờ duyệt',        'count' => $counts['status']['cho_duyet'], 'badgeBg' => 'bg-amber-100 text-amber-800 font-bold'],
-                    'hien_thi'  => ['label' => 'Đang hiển thị',    'count' => $counts['status']['hien_thi'],  'badgeBg' => 'bg-emerald-100 text-emerald-800'],
-                    'an'        => ['label' => 'Đã ẩn / Báo cáo',  'count' => $counts['status']['an'],        'badgeBg' => 'bg-rose-100 text-rose-800']
+                    'hien_thi'  => ['label' => 'Đang hiển thị',    'count' => $counts['status']['hien_thi'],  'badgeBg' => 'bg-emerald-100 text-emerald-800 font-bold'],
+                    'an'        => ['label' => 'Đã ẩn',            'count' => $counts['status']['an'],        'badgeBg' => 'bg-rose-100 text-rose-800']
                 ];
                 ?>
                 <?php foreach ($tabItems as $tabKey => $tab): ?>
                     <?php $isActive = ($currentStatus === $tabKey); ?>
                     <a href="<?= base_url('admin/danh-gia?status=' . $tabKey . '&star=' . ($currentStar ?? '') . '&q=' . urlencode($search) . '&sort=' . $currentSort) ?>" 
                        class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap <?= $isActive ? 'bg-primary text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200' ?>">
-                        <?php if ($tabKey === 'cho_duyet' && $tab['count'] > 0): ?>
-                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                        <?php endif; ?>
                         <span><?= $tab['label'] ?></span>
                         <span class="px-1.5 py-0.5 rounded-full text-[10px] <?= $isActive ? 'bg-white/20 text-white' : $tab['badgeBg'] ?>">
                             <?= number_format($tab['count']) ?>
@@ -237,18 +222,18 @@
     <div id="bulkToolbar" class="hidden items-center justify-between px-4 py-2.5 rounded-xl bg-primary text-white shadow-md transition-all duration-300">
         <div class="flex items-center gap-3">
             <span class="text-xs font-semibold">Đã chọn <strong class="text-secondary font-black" id="selectedCount">0</strong> đánh giá</span>
-            <span class="text-[11px] text-slate-300 hidden sm:inline">Áp dụng thao tác đồng loạt trên các mục đã đánh dấu:</span>
+            <span class="text-[11px] text-slate-300 hidden sm:inline">Thao tác cho các đánh giá đã chọn:</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <button onclick="executeBulkAction('duyet')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-xs transition-colors shadow-sm" type="button">
-                <span class="material-symbols-outlined text-[16px]">verified</span>
-                <span>Duyệt hiển thị</span>
+            <button onclick="executeBulkAction('bo_an')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" type="button" title="Bỏ ẩn để hiển thị công khai trên web">
+                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                <span>Bỏ ẩn / Hiển thị</span>
             </button>
-            <button onclick="executeBulkAction('an')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs transition-colors" type="button">
+            <button onclick="executeBulkAction('an')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors shadow-sm" type="button" title="Ẩn đánh giá khỏi cửa hàng">
                 <span class="material-symbols-outlined text-[16px]">visibility_off</span>
                 <span>Ẩn đánh giá</span>
             </button>
-            <button onclick="executeBulkAction('xoa')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs transition-colors" type="button">
+            <button onclick="executeBulkAction('xoa')" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs transition-colors shadow-sm" type="button" title="Xóa vĩnh viễn">
                 <span class="material-symbols-outlined text-[16px]">delete</span>
                 <span>Xóa vĩnh viễn</span>
             </button>
@@ -347,9 +332,13 @@
                                 <!-- Số Sao -->
                                 <td class="py-3.5 px-3 text-center whitespace-nowrap">
                                     <div class="flex flex-col items-center">
-                                        <div class="flex items-center text-amber-500">
+                                        <div class="flex items-center">
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                <span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' <?= $i <= $rev['so_sao'] ? '1' : '0' ?>;">star</span>
+                                                <?php if ($i <= $rev['so_sao']): ?>
+                                                    <span class="material-symbols-outlined text-[15px] text-amber-400" style="font-variation-settings: 'FILL' 1;">star</span>
+                                                <?php else: ?>
+                                                    <span class="material-symbols-outlined text-[15px] text-slate-200" style="font-variation-settings: 'FILL' 0;">star</span>
+                                                <?php endif; ?>
                                             <?php endfor; ?>
                                         </div>
                                         <span class="font-bold text-primary text-[11px] mt-0.5"><?= number_format($rev['so_sao'], 1) ?> / 5.0</span>
@@ -391,29 +380,29 @@
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Thao Tác Nhanh -->
-                                <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <?php if ($rev['trang_thai'] !== 'hien_thi'): ?>
+                                <!-- Thao Tác Nhanh: Ẩn / Bỏ ẩn / Xóa -->
+                                <td class="py-3.5 px-4 text-right whitespace-nowrap" id="action-cell-<?= $rev['id'] ?>">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <?php if ($rev['trang_thai'] === 'an'): ?>
                                             <button onclick="changeReviewStatus(<?= $rev['id'] ?>, 'hien_thi')" 
-                                                    class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white flex items-center justify-center transition-colors shadow-xs" 
-                                                    title="Duyệt hiển thị">
-                                                <span class="material-symbols-outlined text-[18px]">check</span>
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white transition-all text-[11px] font-bold border border-emerald-200 hover:border-emerald-600 shadow-xs" 
+                                                    title="Bỏ ẩn để hiển thị công khai trên web">
+                                                <span class="material-symbols-outlined text-[15px]">visibility</span>
+                                                <span>Bỏ ẩn</span>
                                             </button>
-                                        <?php endif; ?>
-
-                                        <?php if ($rev['trang_thai'] !== 'an'): ?>
+                                        <?php else: ?>
                                             <button onclick="changeReviewStatus(<?= $rev['id'] ?>, 'an')" 
-                                                    class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-amber-600 text-slate-600 hover:text-white flex items-center justify-center transition-colors" 
-                                                    title="Ẩn đánh giá này">
-                                                <span class="material-symbols-outlined text-[18px]">visibility_off</span>
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 text-amber-700 hover:text-white transition-all text-[11px] font-bold border border-amber-200 hover:border-amber-600 shadow-xs" 
+                                                    title="Ẩn đánh giá này khỏi cửa hàng">
+                                                <span class="material-symbols-outlined text-[15px]">visibility_off</span>
+                                                <span>Ẩn</span>
                                             </button>
                                         <?php endif; ?>
 
                                         <button onclick="deleteReviewItem(<?= $rev['id'] ?>)" 
-                                                class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-600 text-slate-600 hover:text-white flex items-center justify-center transition-colors" 
-                                                title="Xóa vĩnh viễn">
-                                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all border border-rose-200 hover:border-rose-600 shadow-xs" 
+                                                title="Xóa vĩnh viễn đánh giá này">
+                                            <span class="material-symbols-outlined text-[16px]">delete</span>
                                         </button>
                                     </div>
                                 </td>
@@ -558,18 +547,51 @@
         });
     }
 
-    // Cập nhật badge trong DOM tại chỗ
+    // Cập nhật badge & nút thao tác trong DOM tại chỗ
     function updateReviewRowBadge(id, status) {
         const container = document.getElementById(`status-badge-${id}`);
+        const actionCell = document.getElementById(`action-cell-${id}`);
         const row = document.getElementById(`review-row-${id}`);
         if (!container) return;
 
         if (status === 'hien_thi') {
             container.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200"><span class="material-symbols-outlined text-[13px]">check_circle</span>Hiển thị</span>`;
             if (row) row.classList.remove('bg-amber-50/40');
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="changeReviewStatus(${id}, 'an')" 
+                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 text-amber-700 hover:text-white transition-all text-[11px] font-bold border border-amber-200 hover:border-amber-600 shadow-xs" 
+                                title="Ẩn đánh giá này khỏi cửa hàng">
+                            <span class="material-symbols-outlined text-[15px]">visibility_off</span>
+                            <span>Ẩn</span>
+                        </button>
+                        <button onclick="deleteReviewItem(${id})" 
+                                class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all border border-rose-200 hover:border-rose-600 shadow-xs" 
+                                title="Xóa vĩnh viễn đánh giá này">
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                    </div>`;
+            }
         } else if (status === 'an') {
             container.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200"><span class="material-symbols-outlined text-[13px]">visibility_off</span>Đã ẩn</span>`;
             if (row) row.classList.remove('bg-amber-50/40');
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="changeReviewStatus(${id}, 'hien_thi')" 
+                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white transition-all text-[11px] font-bold border border-emerald-200 hover:border-emerald-600 shadow-xs" 
+                                title="Bỏ ẩn để hiển thị công khai trên web">
+                            <span class="material-symbols-outlined text-[15px]">visibility</span>
+                            <span>Bỏ ẩn</span>
+                        </button>
+                        <button onclick="deleteReviewItem(${id})" 
+                                class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-all border border-rose-200 hover:border-rose-600 shadow-xs" 
+                                title="Xóa vĩnh viễn đánh giá này">
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                    </div>`;
+            }
         } else {
             container.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>Chờ duyệt</span>`;
             if (row) row.classList.add('bg-amber-50/40');

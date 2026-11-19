@@ -53,9 +53,16 @@ class AdminReviewController extends Controller {
     }
 
     /**
-     * Duyệt hiển thị đánh giá công khai
+     * Bỏ ẩn / Hiển thị lại đánh giá công khai
      */
     public function approve(int $id): void {
+        $this->unhide($id);
+    }
+
+    /**
+     * Bỏ ẩn / Hiển thị đánh giá công khai
+     */
+    public function unhide(int $id): void {
         $reviewModel = new Review();
         $ok = $reviewModel->updateStatus($id, 'hien_thi');
 
@@ -65,15 +72,15 @@ class AdminReviewController extends Controller {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => $ok,
-                'message' => $ok ? "Đã duyệt hiển thị đánh giá #{$id} thành công!" : "Lỗi khi duyệt đánh giá #{$id}."
+                'message' => $ok ? "Đã bỏ ẩn / hiển thị đánh giá #{$id} thành công!" : "Lỗi khi bỏ ẩn đánh giá #{$id}."
             ]);
             exit;
         }
 
         if ($ok) {
-            set_flash('success', "Đã duyệt hiển thị đánh giá #{$id} thành công!");
+            set_flash('success', "Đã bỏ ẩn / hiển thị đánh giá #{$id} thành công!");
         } else {
-            set_flash('error', "Không thể duyệt đánh giá #{$id}.");
+            set_flash('error', "Không thể bỏ ẩn đánh giá #{$id}.");
         }
         redirect('admin/danh-gia');
     }
@@ -219,9 +226,9 @@ class AdminReviewController extends Controller {
         $reviewModel = new Review();
         $affected = 0;
 
-        if ($action === 'duyet' || $action === 'hien_thi') {
+        if ($action === 'bo_an' || $action === 'hien_thi' || $action === 'duyet') {
             $affected = $reviewModel->bulkUpdateStatus($ids, 'hien_thi');
-            $msg = "Đã duyệt hiển thị thành công {$affected} đánh giá!";
+            $msg = "Đã bỏ ẩn / hiển thị thành công {$affected} đánh giá!";
         } elseif ($action === 'an') {
             $affected = $reviewModel->bulkUpdateStatus($ids, 'an');
             $msg = "Đã ẩn {$affected} đánh giá khỏi cửa hàng!";

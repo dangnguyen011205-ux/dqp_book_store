@@ -7,7 +7,7 @@ class Order extends Model {
     /**
      * Tạo đơn hàng mới an toàn bằng Database Transaction
      */
-    public function createOrder(array $orderData, array $cartItems, ?array $coupon = null): array {
+    public function createOrder(array $orderData, array $cartItems, ?array $coupon = null, bool $isBuyNow = false, ?array $freeshipCoupon = null): array {
         try {
             $this->beginTransaction();
 
@@ -42,18 +42,20 @@ class Order extends Model {
                 $this->execute($sqlUpdateStock, [$qty, $bookId]);
             }
 
-            // 2. Tạo bản ghi đơn hàng
+            // 2. Tạo bản ghi đơn hàng (Chuẩn Shopee: Lưu cả mã giảm giá và mã freeship)
             $sqlOrder = "INSERT INTO `don_hang` 
-                         (`nguoi_dung_id`, `ma_giam_gia_id`, `nguoi_nhan`, `dia_chi_giao`, `tong_tien_hang`, `tien_giam`, `phi_van_chuyen`, `tong_thanh_toan`, `trang_thai`, `ngay_dat`) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'cho_xac_nhan', NOW())";
+                         (`nguoi_dung_id`, `ma_giam_gia_id`, `ma_freeship_id`, `nguoi_nhan`, `dia_chi_giao`, `tong_tien_hang`, `tien_giam`, `tien_giam_ship`, `phi_van_chuyen`, `tong_thanh_toan`, `trang_thai`, `ngay_dat`) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cho_xac_nhan', NOW())";
             
             $this->execute($sqlOrder, [
                 $orderData['nguoi_dung_id'],
                 $coupon ? $coupon['id'] : null,
+                $freeshipCoupon ? $freeshipCoupon['id'] : null,
                 $orderData['nguoi_nhan'],
                 $orderData['dia_chi_giao'],
                 $orderData['tong_tien_hang'],
-                $orderData['tien_giam'],
+                $orderData['tien_giam'] ?? 0.0,
+                $orderData['tien_giam_ship'] ?? 0.0,
                 $orderData['phi_van_chuyen'],
                 $orderData['tong_thanh_toan']
             ]);
@@ -71,10 +73,49 @@ class Order extends Model {
                 ]);
             }
 
-            // 4. Cập nhật lượt sử dụng mã giảm giá (nếu có)
+            // 4. Cập nhật lượt sử dụng mã giảm giá và mã freeship (nếu có)
             if ($coupon) {
+                // Tăng tổng số đơn đã áp dụng mã trên toàn hệ thống (phục vụ thống kê)
                 $sqlCoupon = "UPDATE `ma_giam_gia` SET `da_dung` = `da_dung` + 1 WHERE `id` = ?";
                 $this->execute($sqlCoupon, [$coupon['id']]);
+
+                // Cập nhật số lần đã dùng trong kho voucher riêng của tài khoản này
+                $maxPerUser = (int)($coupon['so_luot_toi_da'] ?? 0);
+                $this->execute(
+                    "INSERT INTO `voucher_nguoi_dung` (`nguoi_dung_id`, `ma_giam_gia_id`, `so_lan_da_dung`, `ngay_luu`, `trang_thai`) 
+                     VALUES (?, ?, 1, NOW(), ?) 
+                     ON DUPLICATE KEY UPDATE 
+                        `so_lan_da_dung` = `so_lan_da_dung` + 1,
+                        `trang_thai` = (CASE WHEN ? > 0 AND `so_lan_da_dung` >= ? THEN 'da_dung' ELSE 'chua_dung' END)",
+                    [
+                        $orderData['nguoi_dung_id'], 
+                        $coupon['id'], 
+                        ($maxPerUser > 0 && 1 >= $maxPerUser) ? 'da_dung' : 'chua_dung',
+                        $maxPerUser,
+                        $maxPerUser
+                    ]
+                );
+            }
+
+            if ($freeshipCoupon) {
+                $sqlFs = "UPDATE `ma_giam_gia` SET `da_dung` = `da_dung` + 1 WHERE `id` = ?";
+                $this->execute($sqlFs, [$freeshipCoupon['id']]);
+
+                $maxPerUserFs = (int)($freeshipCoupon['so_luot_toi_da'] ?? 0);
+                $this->execute(
+                    "INSERT INTO `voucher_nguoi_dung` (`nguoi_dung_id`, `ma_giam_gia_id`, `so_lan_da_dung`, `ngay_luu`, `trang_thai`) 
+                     VALUES (?, ?, 1, NOW(), ?) 
+                     ON DUPLICATE KEY UPDATE 
+                        `so_lan_da_dung` = `so_lan_da_dung` + 1,
+                        `trang_thai` = (CASE WHEN ? > 0 AND `so_lan_da_dung` >= ? THEN 'da_dung' ELSE 'chua_dung' END)",
+                    [
+                        $orderData['nguoi_dung_id'], 
+                        $freeshipCoupon['id'], 
+                        ($maxPerUserFs > 0 && 1 >= $maxPerUserFs) ? 'da_dung' : 'chua_dung',
+                        $maxPerUserFs,
+                        $maxPerUserFs
+                    ]
+                );
             }
 
             // 5. Tạo bản ghi thanh toán
@@ -104,9 +145,11 @@ class Order extends Model {
             $sqlHistory = "INSERT INTO `lich_su_don_hang` (`don_hang_id`, `trang_thai`, `ghi_chu`, `thoi_gian`) VALUES (?, 'cho_xac_nhan', ?, NOW())";
             $this->execute($sqlHistory, [$orderId, $ghiChu]);
 
-            // 7. Xóa giỏ hàng
-            $cartModel = new Cart();
-            $cartModel->clearCart($orderData['nguoi_dung_id']);
+            // 7. Xóa giỏ hàng (chỉ xóa khi đặt hàng từ giỏ hàng; giữ nguyên giỏ hàng nếu là Mua Ngay)
+            if (!$isBuyNow) {
+                $cartModel = new Cart();
+                $cartModel->clearCart($orderData['nguoi_dung_id']);
+            }
 
             $this->commit();
 
@@ -128,7 +171,7 @@ class Order extends Model {
     /**
      * Lấy danh sách đơn hàng của một người dùng
      */
-    public function getUserOrders(int $userId, ?string $status = null): array {
+    public function getUserOrders(int $userId, ?string $status = null, ?string $search = null): array {
         $sql = "SELECT dh.*, tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan,
                        mgg.ma AS ma_voucher,
                        COUNT(ct.id) AS tong_so_mat_hang,
@@ -145,6 +188,28 @@ class Order extends Model {
         if (!empty($status) && $status !== 'tat_ca') {
             $sql .= " AND dh.trang_thai = ?";
             $params[] = $status;
+        }
+
+        // Tìm kiếm theo mã đơn hoặc tên sản phẩm đã từng đặt
+        if (!empty($search)) {
+            $keyword = trim($search);
+            $cleaned = preg_replace('/^#?BK-?/i', '', $keyword);
+            $like = '%' . $keyword . '%';
+            $cleanedId = is_numeric($cleaned) ? (int)$cleaned : -1;
+
+            $sql .= " AND (
+                dh.id = ? 
+                OR CAST(dh.id AS CHAR) LIKE ?
+                OR dh.id IN (
+                    SELECT ctdh2.don_hang_id 
+                    FROM `chi_tiet_don_hang` ctdh2 
+                    JOIN `sach` s2 ON ctdh2.sach_id = s2.id 
+                    WHERE s2.tieu_de LIKE ?
+                )
+            )";
+            $params[] = $cleanedId;
+            $params[] = $like;
+            $params[] = $like;
         }
 
         $sql .= " GROUP BY dh.id ORDER BY dh.ngay_dat DESC";
@@ -169,12 +234,14 @@ class Order extends Model {
      * Lấy chi tiết toàn diện của một đơn hàng (kèm sản phẩm, thanh toán và timeline stepper)
      */
     public function getOrderDetail(int $orderId, ?int $userId = null): ?array {
-        $sql = "SELECT dh.*, tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich, tt.ngay_thanh_toan, tt.ngay_thanh_toan,
-                       mgg.ma AS ma_voucher, mgg.loai AS loai_voucher, mgg.gia_tri AS gia_tri_voucher,
+        $sql = "SELECT dh.*, tt.phuong_thuc, tt.trang_thai AS trang_thai_thanh_toan, tt.ma_giao_dich, tt.ngay_thanh_toan,
+                       mgg.ma AS ma_voucher, mgg.loai AS loai_voucher, mgg.gia_tri AS gia_tri_voucher, mgg.tieu_de AS tieu_de_voucher,
+                       fs.ma AS ma_freeship, fs.gia_tri AS gia_tri_freeship, fs.tieu_de AS tieu_de_freeship,
                        nd.ho_ten AS khach_hang_ten, nd.email AS khach_hang_email, nd.so_dien_thoai AS khach_hang_sdt
                 FROM `don_hang` dh
                 LEFT JOIN `thanh_toan` tt ON dh.id = tt.don_hang_id
                 LEFT JOIN `ma_giam_gia` mgg ON dh.ma_giam_gia_id = mgg.id
+                LEFT JOIN `ma_giam_gia` fs ON dh.ma_freeship_id = fs.id
                 JOIN `nguoi_dung` nd ON dh.nguoi_dung_id = nd.id
                 WHERE dh.id = ?";
         
@@ -238,10 +305,32 @@ class Order extends Model {
                 $this->execute("UPDATE `sach` SET `so_luong_ton` = `so_luong_ton` + ? WHERE `id` = ?", [$it['so_luong'], $it['sach_id']]);
             }
 
-            // 3. Hoàn lại lượt sử dụng mã giảm giá (nếu có)
+            // 3. Hoàn lại lượt sử dụng mã giảm giá & mã freeship (nếu có)
+            $couponModel = new Coupon();
             if (!empty($order['ma_giam_gia_id'])) {
-                $couponModel = new Coupon();
                 $couponModel->decrementUsage((int)$order['ma_giam_gia_id']);
+
+                // Hoàn lại voucher vào kho voucher riêng của tài khoản này
+                $this->execute(
+                    "UPDATE `voucher_nguoi_dung` 
+                     SET `so_lan_da_dung` = GREATEST(0, `so_lan_da_dung` - 1),
+                         `trang_thai` = 'chua_dung' 
+                     WHERE `nguoi_dung_id` = ? AND `ma_giam_gia_id` = ?",
+                    [$order['nguoi_dung_id'], $order['ma_giam_gia_id']]
+                );
+            }
+
+            if (!empty($order['ma_freeship_id'])) {
+                $couponModel->decrementUsage((int)$order['ma_freeship_id']);
+
+                // Hoàn lại mã freeship vào kho voucher riêng
+                $this->execute(
+                    "UPDATE `voucher_nguoi_dung` 
+                     SET `so_lan_da_dung` = GREATEST(0, `so_lan_da_dung` - 1),
+                         `trang_thai` = 'chua_dung' 
+                     WHERE `nguoi_dung_id` = ? AND `ma_giam_gia_id` = ?",
+                    [$order['nguoi_dung_id'], $order['ma_freeship_id']]
+                );
             }
 
             // 4. Cập nhật trạng thái đơn hàng sang da_huy
@@ -385,16 +474,33 @@ class Order extends Model {
             $params[] = $filters['status'];
         }
 
-        // 2. Tìm kiếm theo từ khóa: mã đơn, tên người nhận, tên khách, email, SĐT
+        // 2. Tìm kiếm theo từ khóa: mã đơn, tên người nhận, tên khách, email, SĐT, địa chỉ, mã GD, hoặc tên sách
         if (!empty($filters['search'])) {
             $keyword = trim($filters['search']);
             $cleaned = preg_replace('/^#?BK-?/i', '', $keyword);
             $like = '%' . $keyword . '%';
             $cleanedId = is_numeric($cleaned) ? (int)$cleaned : -1;
 
-            $where[] = "(dh.id = ? OR dh.nguoi_nhan LIKE ? OR nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR dh.dia_chi_giao LIKE ? OR tt.ma_giao_dich LIKE ?)";
-            $params[] = $like;
+            $where[] = "(
+                dh.id = ? 
+                OR CAST(dh.id AS CHAR) LIKE ? 
+                OR dh.nguoi_nhan LIKE ? 
+                OR nd.ho_ten LIKE ? 
+                OR nd.email LIKE ? 
+                OR nd.so_dien_thoai LIKE ? 
+                OR dh.dia_chi_giao LIKE ? 
+                OR tt.ma_giao_dich LIKE ? 
+                OR dh.id IN (
+                    SELECT ctdh2.don_hang_id 
+                    FROM `chi_tiet_don_hang` ctdh2 
+                    JOIN `sach` s2 ON ctdh2.sach_id = s2.id 
+                    WHERE s2.tieu_de LIKE ?
+                )
+            )";
             $params[] = $cleanedId;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
@@ -522,10 +628,31 @@ class Order extends Model {
                     );
                 }
 
-                // Hoàn lại lượt dùng mã giảm giá nếu có
+                // Hoàn lại lượt dùng mã giảm giá & mã freeship nếu có
+                $couponModel = new Coupon();
                 if (!empty($order['ma_giam_gia_id'])) {
-                    $couponModel = new Coupon();
                     $couponModel->decrementUsage((int)$order['ma_giam_gia_id']);
+
+                    // Hoàn lại voucher vào kho voucher riêng của tài khoản này
+                    $this->execute(
+                        "UPDATE `voucher_nguoi_dung` 
+                         SET `so_lan_da_dung` = GREATEST(0, `so_lan_da_dung` - 1),
+                             `trang_thai` = 'chua_dung' 
+                         WHERE `nguoi_dung_id` = ? AND `ma_giam_gia_id` = ?",
+                        [$order['nguoi_dung_id'], $order['ma_giam_gia_id']]
+                    );
+                }
+
+                if (!empty($order['ma_freeship_id'])) {
+                    $couponModel->decrementUsage((int)$order['ma_freeship_id']);
+
+                    $this->execute(
+                        "UPDATE `voucher_nguoi_dung` 
+                         SET `so_lan_da_dung` = GREATEST(0, `so_lan_da_dung` - 1),
+                             `trang_thai` = 'chua_dung' 
+                         WHERE `nguoi_dung_id` = ? AND `ma_giam_gia_id` = ?",
+                        [$order['nguoi_dung_id'], $order['ma_freeship_id']]
+                    );
                 }
 
                 // Cập nhật trạng thái thanh toán sang thất bại nếu chưa hoàn thành
@@ -538,9 +665,31 @@ class Order extends Model {
             // 3. Nếu chuyển sang 'hoan_thanh', tự động chuyển trạng thái thanh toán sang 'thanh_cong' cho đơn COD
             if ($newStatus === 'hoan_thanh') {
                 $this->execute(
-                    "UPDATE `thanh_toan` SET `trang_thai` = 'thanh_cong', `ngay_thanh_toan` = NOW() WHERE `don_hang_id` = ? AND `trang_thai` = 'cho_thanh_toan'",
+                    "UPDATE `thanh_toan` SET `trang_thai` = 'thanh_cong', `ngay_thanh_toan` = NOW() WHERE `don_hang_id` = ? AND (`trang_thai` = 'cho_thanh_toan' OR `phuong_thuc` = 'COD')",
                     [$orderId]
                 );
+
+                // Tự động cập nhật tăng số lượt bán (luot_ban) cho từng sản phẩm trong đơn
+                if ($currentStatus !== 'hoan_thanh') {
+                    $orderItems = $this->fetchAll("SELECT sach_id, so_luong FROM `chi_tiet_don_hang` WHERE `don_hang_id` = ?", [$orderId]);
+                    foreach ($orderItems as $item) {
+                        $this->execute(
+                            "UPDATE `sach` SET `luot_ban` = `luot_ban` + ? WHERE `id` = ?",
+                            [(int)$item['so_luong'], (int)$item['sach_id']]
+                        );
+                    }
+                }
+            }
+
+            // Nếu đơn trước đó là 'hoan_thanh' nhưng chuyển sang 'da_huy', hoàn trả lại lượt bán
+            if ($currentStatus === 'hoan_thanh' && $newStatus === 'da_huy') {
+                $orderItems = $this->fetchAll("SELECT sach_id, so_luong FROM `chi_tiet_don_hang` WHERE `don_hang_id` = ?", [$orderId]);
+                foreach ($orderItems as $item) {
+                    $this->execute(
+                        "UPDATE `sach` SET `luot_ban` = GREATEST(0, `luot_ban` - ?) WHERE `id` = ?",
+                        [(int)$item['so_luong'], (int)$item['sach_id']]
+                    );
+                }
             }
 
             // 4. Nếu có yêu cầu cập nhật trạng thái thanh toán riêng
@@ -553,6 +702,11 @@ class Order extends Model {
 
             // 5. Cập nhật trạng thái đơn hàng
             $this->execute("UPDATE `don_hang` SET `trang_thai` = ? WHERE `id` = ?", [$newStatus, $orderId]);
+
+            // Lấy trạng thái thanh toán mới nhất sau cập nhật
+            $updatedPayment = $this->fetchOne("SELECT phuong_thuc, trang_thai FROM `thanh_toan` WHERE `don_hang_id` = ?", [$orderId]);
+            $updatedPaymentStatus = $updatedPayment['trang_thai'] ?? 'cho_thanh_toan';
+            $paymentMethod = $updatedPayment['phuong_thuc'] ?? ($order['phuong_thuc'] ?? 'COD');
 
             // 6. Ghi log vào lịch sử đơn hàng
             $statusLabels = [
@@ -577,11 +731,13 @@ class Order extends Model {
             $this->commit();
 
             return [
-                'success'    => true,
-                'order_id'   => $orderId,
-                'old_status' => $currentStatus,
-                'new_status' => $newStatus,
-                'message'    => "Cập nhật đơn hàng #BK-{$orderId} sang '{$label}' thành công!"
+                'success'        => true,
+                'order_id'       => $orderId,
+                'old_status'     => $currentStatus,
+                'new_status'     => $newStatus,
+                'payment_status' => $updatedPaymentStatus,
+                'payment_method' => $paymentMethod,
+                'message'        => "Cập nhật đơn hàng #BK-{$orderId} sang '{$label}' thành công!"
             ];
 
         } catch (\Throwable $e) {

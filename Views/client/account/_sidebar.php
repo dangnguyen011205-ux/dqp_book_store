@@ -75,6 +75,18 @@ $currentPath = trim($_GET['url'] ?? '', '/');
             <?php endif; ?>
         </a>
 
+        <!-- Ví voucher của tôi -->
+        <a href="<?= base_url('tai-khoan/vi-voucher') ?>" 
+           class="flex items-center justify-between px-4 py-3 rounded-xl transition-colors <?= (str_starts_with($currentPath, 'tai-khoan/vi-voucher') || str_starts_with($currentPath, 'tai-khoan/voucher') || $currentPath === 'vi-voucher') ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-surface-container-low hover:text-primary' ?>">
+            <span class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-[18px]">confirmation_number</span>
+                <span>Ví voucher của tôi</span>
+            </span>
+            <?php if (str_starts_with($currentPath, 'tai-khoan/vi-voucher') || str_starts_with($currentPath, 'tai-khoan/voucher') || $currentPath === 'vi-voucher'): ?>
+                <span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+            <?php endif; ?>
+        </a>
+
         <div class="my-1 border-t border-slate-100"></div>
 
         <a href="<?= base_url('dang-xuat') ?>" class="flex items-center gap-2.5 px-4 py-3 rounded-xl text-rose-600 hover:bg-rose-50 transition-colors">

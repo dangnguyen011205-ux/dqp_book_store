@@ -354,6 +354,14 @@ function getCatalogBookCover(?string $anhBia, array $fallbackMap): string {
                                     <span class="text-sm font-bold text-primary"><?= format_currency($book['gia']) ?></span>
                                     <span class="text-[10px] text-slate-400 line-through"><?= format_currency($originalPrice) ?></span>
                                 </div>
+
+                                <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                                    <span class="font-bold text-secondary flex items-center gap-0.5">
+                                        <span class="material-symbols-outlined text-[13px] text-rose-500">local_fire_department</span>
+                                        <span>Đã bán: <strong><?= number_format($book['luot_ban'] ?? $book['da_ban'] ?? 0) ?></strong></span>
+                                    </span>
+                                    <span>Tồn: <?= $book['so_luong_ton'] ?></span>
+                                </div>
                             </div>
 
                             <div class="pt-3 border-t border-slate-100 mt-3 flex items-center gap-2">

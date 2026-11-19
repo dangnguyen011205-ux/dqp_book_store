@@ -21,6 +21,14 @@ $currentUrl = trim($_GET['url'] ?? '', '/');
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js Library -->
+    <script src="<?= base_url('public/js/chart.umd.min.js') ?>"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>');
+        }
+    </script>
     <script id="tailwind-config">
     tailwind.config = {
         darkMode: "class",
@@ -149,11 +157,25 @@ $currentUrl = trim($_GET['url'] ?? '', '/');
                     <span>Mã Giảm Giá</span>
                 </a>
 
-                <!-- Duyệt Đánh Giá -->
+                <!-- Quảng Cáo & Banner Voucher -->
+                <a href="<?= base_url('admin/quang-cao') ?>" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= str_starts_with($currentUrl, 'admin/quang-cao') ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
+                    <span class="material-symbols-outlined text-[20px]">campaign</span>
+                    <span>Quảng Cáo &amp; Banner</span>
+                </a>
+
+                <!-- Flash Sale -->
+                <a href="<?= base_url('admin/flash-sale') ?>"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= str_starts_with($currentUrl, 'admin/flash-sale') || $currentUrl === 'quan-ly-flash-sale' ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
+                    <span class="material-symbols-outlined text-[20px]">bolt</span>
+                    <span>Flash Sale</span>
+                </a>
+
+                <!-- Quản lý Đánh Giá -->
                 <a href="<?= base_url('admin/danh-gia') ?>" 
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= str_starts_with($currentUrl, 'admin/danh-gia') ? 'bg-secondary text-white shadow-sm' : 'text-on-primary-container hover:bg-primary-container hover:text-white' ?>">
-                    <span class="material-symbols-outlined text-[20px]">star_half</span>
-                    <span>Duyệt Đánh Giá</span>
+                    <span class="material-symbols-outlined text-[20px]">reviews</span>
+                    <span>Quản lý Đánh Giá</span>
                 </a>
 
                 <!-- Người Dùng -->

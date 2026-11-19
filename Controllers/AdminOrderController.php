@@ -22,6 +22,12 @@ class AdminOrderController extends Controller {
         $paymentStatus = trim($_GET['payment_status'] ?? $_GET['trang_thai_thanh_toan'] ?? '');
         $page = max(1, (int)($_GET['page'] ?? 1));
 
+        // Hỗ trợ lọc trạng thái "Đã hủy" (thay cho thất bại)
+        if ($paymentStatus === 'da_huy' || $paymentStatus === 'that_bai' || $status === 'that_bai') {
+            $status = 'da_huy';
+            $paymentStatus = '';
+        }
+
         $orderModel = new Order();
 
         $stats = $orderModel->getAdminStats();

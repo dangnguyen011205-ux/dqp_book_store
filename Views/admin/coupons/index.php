@@ -175,7 +175,7 @@
                         <th class="py-3.5 px-4">Loại & Mức Giảm</th>
                         <th class="py-3.5 px-4">Đơn Tối Thiểu</th>
                         <th class="py-3.5 px-4">Thời Gian Hiệu Lực</th>
-                        <th class="py-3.5 px-4">Lượt Đã Dùng</th>
+                        <th class="py-3.5 px-4">Giới Hạn & Lượt Dùng</th>
                         <th class="py-3.5 px-4 text-center">Trạng Thái</th>
                         <th class="py-3.5 px-4 text-center w-28">Thao Tác</th>
                     </tr>
@@ -199,10 +199,7 @@
                                 $now = date('Y-m-d H:i:s');
                                 $isExpired = $c['ket_thuc'] < $now;
                                 $isNotStarted = $c['bat_dau'] > $now;
-                                $isMaxUsed = ($c['so_luot_toi_da'] > 0 && $c['da_dung'] >= $c['so_luot_toi_da']);
-                                $isActive = (!$isExpired && !$isNotStarted && !$isMaxUsed);
-
-                                $percentUsed = ($c['so_luot_toi_da'] > 0) ? min(100, round(($c['da_dung'] / $c['so_luot_toi_da']) * 100)) : 0;
+                                $isActive = (!$isExpired && !$isNotStarted);
                             ?>
                             <tr id="coupon-row-<?= $c['id'] ?>" class="hover:bg-slate-50/60 transition-colors">
                                 <!-- STT -->
@@ -218,25 +215,46 @@
                                             <span><?= htmlspecialchars($c['ma']) ?></span>
                                         </div>
                                     </div>
-                                    <div class="text-[10px] text-slate-400 mt-1">
-                                        Đã dùng trong <?= number_format($c['so_don_hang'] ?? 0) ?> đơn hàng
+                                    <div class="text-[10px] text-slate-500 flex items-center gap-1 mt-1.5">
+                                        <span class="material-symbols-outlined text-[12px] text-slate-400">group</span>
+                                        <span>Đã lưu ví: <b class="font-bold text-slate-700"><?= number_format($c['so_nguoi_luu'] ?? 0) ?></b> khách</span>
                                     </div>
                                 </td>
 
                                 <!-- Loại & Mức Giảm -->
                                 <td class="py-3 px-4">
-                                    <?php if ($c['loai'] === 'phan_tram'): ?>
-                                        <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-bold text-xs">
-                                            <span class="material-symbols-outlined text-[14px]">percent</span>
-                                            <span>Giảm <?= number_format($c['gia_tri']) ?>%</span>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <?php if (($c['loai_voucher'] ?? 'giam_gia') === 'mien_phi_van_chuyen'): ?>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-600 text-white">
+                                                Freeship
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500 text-white">
+                                                Giảm Giá
+                                            </span>
+                                        <?php endif; ?>
+
+                                        <?php if ($c['loai'] === 'phan_tram'): ?>
+                                            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-bold text-xs">
+                                                <span class="material-symbols-outlined text-[14px]">percent</span>
+                                                <span>Giảm <?= number_format($c['gia_tri']) ?>%</span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
+                                                <span class="material-symbols-outlined text-[14px]">payments</span>
+                                                <span>Giảm <?= format_currency($c['gia_tri']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (!empty($c['giam_toi_da']) && (float)$c['giam_toi_da'] > 0): ?>
+                                        <div class="text-[10px] text-amber-700 font-semibold mt-0.5">
+                                            Tối đa: <?= format_currency($c['giam_toi_da']) ?>
                                         </div>
-                                        <div class="text-[10px] text-slate-400 mt-0.5">Giảm theo % đơn hàng</div>
-                                    <?php else: ?>
-                                        <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
-                                            <span class="material-symbols-outlined text-[14px]">payments</span>
-                                            <span>Giảm <?= format_currency($c['gia_tri']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($c['tieu_de'])): ?>
+                                        <div class="text-[11px] text-slate-500 font-medium line-clamp-1 mt-0.5">
+                                            <?= htmlspecialchars($c['tieu_de']) ?>
                                         </div>
-                                        <div class="text-[10px] text-slate-400 mt-0.5">Trừ trực tiếp tiền mặt</div>
                                     <?php endif; ?>
                                 </td>
 
@@ -259,21 +277,29 @@
                                     </div>
                                 </td>
 
-                                <!-- Lượt Đã Dùng -->
+                                <!-- Giới Hạn & Lượt Đã Dùng -->
                                 <td class="py-3 px-4">
-                                    <div class="flex items-center justify-between text-[11px] font-bold mb-1">
-                                        <span class="text-primary"><?= number_format($c['da_dung']) ?></span>
-                                        <span class="text-slate-400 font-normal">
-                                            / <?= $c['so_luot_toi_da'] > 0 ? number_format($c['so_luot_toi_da']) : '∞' ?>
-                                        </span>
-                                    </div>
-                                    <?php if ($c['so_luot_toi_da'] > 0): ?>
-                                        <div class="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                            <div class="h-full rounded-full <?= $percentUsed >= 100 ? 'bg-rose-500' : ($percentUsed >= 80 ? 'bg-amber-500' : 'bg-secondary') ?>" style="width: <?= $percentUsed ?>%"></div>
+                                    <div class="space-y-1">
+                                        <!-- Giới hạn mỗi tài khoản sau khi lưu -->
+                                        <div>
+                                            <?php if ((int)$c['so_luot_toi_da'] > 0): ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-2xs">
+                                                    <span class="material-symbols-outlined text-[13px]">person</span>
+                                                    <span><?= number_format($c['so_luot_toi_da']) ?> lượt / khách</span>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">
+                                                    <span class="material-symbols-outlined text-[13px]">all_inclusive</span>
+                                                    <span>Không giới hạn</span>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php else: ?>
-                                        <span class="text-[10px] text-emerald-600 font-medium">Không giới hạn</span>
-                                    <?php endif; ?>
+                                        <!-- Tổng đơn toàn sàn đã áp dụng -->
+                                        <div class="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+                                            <span>Toàn sàn:</span>
+                                            <b class="text-primary font-bold"><?= number_format($c['da_dung']) ?> đơn</b>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <!-- Trạng Thái Badge -->
@@ -287,11 +313,6 @@
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-bold">
                                             <span class="material-symbols-outlined text-[13px]">schedule</span>
                                             <span>Chưa bắt đầu</span>
-                                        </span>
-                                    <?php elseif ($isMaxUsed): ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
-                                            <span class="material-symbols-outlined text-[13px]">lock</span>
-                                            <span>Hết lượt</span>
                                         </span>
                                     <?php else: ?>
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold">
@@ -366,11 +387,34 @@
             <p class="text-[10px] text-slate-400 mt-1">Chỉ gồm chữ in hoa, số và gạch nối (không chứa khoảng trắng).</p>
         </div>
 
-        <!-- Loại giảm giá & Giá trị -->
+        <!-- Phân loại Voucher (Shopee Style) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
+                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1.5" for="couponVoucherType">
+                    Mục Đích Áp Dụng <span class="text-rose-600">*</span>
+                </label>
+                <select id="couponVoucherType" name="loai_voucher" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-primary focus:outline-none focus:border-secondary">
+                    <option value="giam_gia">Mã Giảm Giá Đơn Hàng (Tiền Hàng)</option>
+                    <option value="mien_phi_van_chuyen">Mã Miễn Phí Vận Chuyển (Freeship)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1.5" for="couponTitle">
+                    Tiêu Đề / Mô Tả Ngắn
+                </label>
+                <input type="text" 
+                       id="couponTitle" 
+                       name="tieu_de" 
+                       placeholder="VD: Giảm 10% Tối đa 50k" 
+                       class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-primary focus:outline-none focus:border-secondary focus:bg-white"/>
+            </div>
+        </div>
+
+        <!-- Loại giảm giá & Giá trị & Giảm tối đa -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
                 <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1.5" for="couponType">
-                    Loại Giảm Giá <span class="text-rose-600">*</span>
+                    Cách Tính Giảm <span class="text-rose-600">*</span>
                 </label>
                 <select id="couponType" name="loai" onchange="handleTypeChange()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-primary focus:outline-none focus:border-secondary">
                     <option value="phan_tram">Phần trăm (%)</option>
@@ -388,6 +432,18 @@
                        min="1" 
                        step="any"
                        placeholder="VD: 10" 
+                       class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:bg-white"/>
+            </div>
+            <div id="maxDiscountContainer">
+                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1.5" for="couponMaxDiscount">
+                    Giảm Tối Đa (VNĐ)
+                </label>
+                <input type="number" 
+                       id="couponMaxDiscount" 
+                       name="giam_toi_da" 
+                       min="0" 
+                       step="1000"
+                       placeholder="VD: 50000" 
                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:bg-white"/>
             </div>
         </div>
@@ -410,16 +466,16 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1.5" for="couponMaxUsage">
-                    Số Lượt Tối Đa
+                    Số Lượt Dùng / Khách Hàng <span class="text-slate-400 font-normal lowercase">(sau khi lưu)</span>
                 </label>
                 <input type="number" 
                        id="couponMaxUsage" 
                        name="so_luot_toi_da" 
                        min="0" 
-                       value="0" 
-                       placeholder="VD: 100" 
+                       value="1" 
+                       placeholder="VD: 1" 
                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:bg-white"/>
-                <p class="text-[10px] text-slate-400 mt-1">Để 0 nếu không giới hạn lượt dùng.</p>
+                <p class="text-[10px] text-slate-400 mt-1">Số lần mỗi khách hàng được dùng mã này sau khi lưu (Để 1 nếu mỗi tài khoản dùng 1 lần, 0 nếu không giới hạn).</p>
             </div>
         </div>
 
@@ -506,15 +562,18 @@
         const type = document.getElementById('couponType').value;
         const unit = document.getElementById('valueUnit');
         const valInput = document.getElementById('couponValue');
+        const maxContainer = document.getElementById('maxDiscountContainer');
 
         if (type === 'phan_tram') {
             unit.textContent = '(%)';
             valInput.max = '100';
             valInput.placeholder = 'VD: 15';
+            if (maxContainer) maxContainer.style.display = 'block';
         } else {
             unit.textContent = '(VNĐ)';
             valInput.removeAttribute('max');
             valInput.placeholder = 'VD: 30000';
+            if (maxContainer) maxContainer.style.display = 'none';
         }
     }
 
@@ -523,9 +582,12 @@
         document.getElementById('couponForm').action = baseUrl + 'admin/ma-giam-gia/them';
         document.getElementById('couponId').value = '';
         document.getElementById('couponCode').value = '';
+        document.getElementById('couponVoucherType').value = 'giam_gia';
+        document.getElementById('couponTitle').value = '';
         document.getElementById('couponType').value = 'phan_tram';
         handleTypeChange();
         document.getElementById('couponValue').value = '';
+        document.getElementById('couponMaxDiscount').value = '';
         document.getElementById('couponMinOrder').value = '0';
         document.getElementById('couponMaxUsage').value = '0';
 
@@ -558,9 +620,12 @@
                 document.getElementById('couponForm').action = baseUrl + 'admin/ma-giam-gia/sua/' + c.id;
                 document.getElementById('couponId').value = c.id;
                 document.getElementById('couponCode').value = c.ma;
+                document.getElementById('couponVoucherType').value = c.loai_voucher || 'giam_gia';
+                document.getElementById('couponTitle').value = c.tieu_de || '';
                 document.getElementById('couponType').value = c.loai;
                 handleTypeChange();
                 document.getElementById('couponValue').value = parseFloat(c.gia_tri);
+                document.getElementById('couponMaxDiscount').value = c.giam_toi_da ? parseFloat(c.giam_toi_da) : '';
                 document.getElementById('couponMinOrder').value = parseFloat(c.don_toi_thieu);
                 document.getElementById('couponMaxUsage').value = parseInt(c.so_luot_toi_da);
                 document.getElementById('couponStart').value = c.bat_dau_input;

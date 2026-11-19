@@ -19,6 +19,7 @@ class AdminCouponController extends Controller {
         $type = trim($_GET['type'] ?? 'tat_ca');
 
         $couponModel = new Coupon();
+        $couponModel->syncUsage(); // Tự động đồng bộ số lượt đã dùng thực tế (loại trừ đơn hủy)
         $coupons = $couponModel->getAll(
             $search, 
             $status === 'tat_ca' ? '' : $status, 
@@ -68,8 +69,11 @@ class AdminCouponController extends Controller {
         $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
 
         $ma = strtoupper(trim($_POST['ma'] ?? ''));
+        $tieuDe = trim($_POST['tieu_de'] ?? '');
+        $loaiVoucher = trim($_POST['loai_voucher'] ?? 'giam_gia');
         $loai = trim($_POST['loai'] ?? 'phan_tram');
         $giaTri = (float)str_replace(['.', ','], ['', '.'], $_POST['gia_tri'] ?? '0');
+        $giamToiDa = (float)str_replace(['.', ','], ['', '.'], $_POST['giam_toi_da'] ?? '0');
         $donToiThieu = (float)str_replace(['.', ','], ['', '.'], $_POST['don_toi_thieu'] ?? '0');
         $batDau = trim($_POST['bat_dau'] ?? '');
         $ketThuc = trim($_POST['ket_thuc'] ?? '');
@@ -86,6 +90,10 @@ class AdminCouponController extends Controller {
         $couponModel = new Coupon();
         if (empty($errors) && $couponModel->checkCodeExists($ma)) {
             $errors[] = "Mã giảm giá '{$ma}' đã tồn tại trong hệ thống. Vui lòng chọn mã khác.";
+        }
+
+        if (!in_array($loaiVoucher, ['giam_gia', 'mien_phi_van_chuyen'])) {
+            $loaiVoucher = 'giam_gia';
         }
 
         if (!in_array($loai, ['phan_tram', 'tien_mat'])) {
@@ -130,8 +138,11 @@ class AdminCouponController extends Controller {
         // Lưu vào CSDL
         $id = $couponModel->create([
             'ma'            => $ma,
+            'tieu_de'       => $tieuDe,
+            'loai_voucher'  => $loaiVoucher,
             'loai'          => $loai,
             'gia_tri'       => $giaTri,
+            'giam_toi_da'   => ($loai === 'phan_tram' && $giamToiDa > 0) ? $giamToiDa : null,
             'don_toi_thieu' => $donToiThieu,
             'bat_dau'       => date('Y-m-d H:i:s', strtotime($batDau)),
             'ket_thuc'      => date('Y-m-d H:i:s', strtotime($ketThuc)),
@@ -173,8 +184,11 @@ class AdminCouponController extends Controller {
         }
 
         $ma = strtoupper(trim($_POST['ma'] ?? ''));
+        $tieuDe = trim($_POST['tieu_de'] ?? '');
+        $loaiVoucher = trim($_POST['loai_voucher'] ?? 'giam_gia');
         $loai = trim($_POST['loai'] ?? 'phan_tram');
         $giaTri = (float)str_replace(['.', ','], ['', '.'], $_POST['gia_tri'] ?? '0');
+        $giamToiDa = (float)str_replace(['.', ','], ['', '.'], $_POST['giam_toi_da'] ?? '0');
         $donToiThieu = (float)str_replace(['.', ','], ['', '.'], $_POST['don_toi_thieu'] ?? '0');
         $batDau = trim($_POST['bat_dau'] ?? '');
         $ketThuc = trim($_POST['ket_thuc'] ?? '');
@@ -190,6 +204,10 @@ class AdminCouponController extends Controller {
 
         if (empty($errors) && $couponModel->checkCodeExists($ma, $id)) {
             $errors[] = "Mã giảm giá '{$ma}' đã được dùng cho voucher khác. Vui lòng chọn mã khác.";
+        }
+
+        if (!in_array($loaiVoucher, ['giam_gia', 'mien_phi_van_chuyen'])) {
+            $loaiVoucher = 'giam_gia';
         }
 
         if (!in_array($loai, ['phan_tram', 'tien_mat'])) {
@@ -233,13 +251,19 @@ class AdminCouponController extends Controller {
 
         $ok = $couponModel->update($id, [
             'ma'            => $ma,
+            'tieu_de'       => $tieuDe,
+            'loai_voucher'  => $loaiVoucher,
             'loai'          => $loai,
             'gia_tri'       => $giaTri,
+            'giam_toi_da'   => ($loai === 'phan_tram' && $giamToiDa > 0) ? $giamToiDa : null,
             'don_toi_thieu' => $donToiThieu,
             'bat_dau'       => date('Y-m-d H:i:s', strtotime($batDau)),
             'ket_thuc'      => date('Y-m-d H:i:s', strtotime($ketThuc)),
             'so_luot_toi_da'=> $soLuotToiDa
         ]);
+        if ($ok) {
+            $couponModel->syncUsage($id);
+        }
 
         $msg = $ok ? "Đã cập nhật mã giảm giá '{$ma}' thành công!" : "Lỗi khi cập nhật mã giảm giá.";
         if ($isAjax) {

@@ -209,8 +209,9 @@ class AccountController extends Controller {
         $userId = Auth::id();
         $user = $this->userModel->findById($userId);
         $status = $_GET['status'] ?? 'tat_ca';
+        $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
 
-        $orders = $this->orderModel->getUserOrders($userId, $status);
+        $orders = $this->orderModel->getUserOrders($userId, $status, $search);
         $counts = $this->orderModel->getOrderCounts($userId);
 
         $this->view('client.account.orders', [
@@ -219,6 +220,7 @@ class AccountController extends Controller {
             'orders'         => $orders,
             'counts'         => $counts,
             'currentStatus'  => $status,
+            'search'         => $search,
             'activeMenu'     => 'orders'
         ]);
     }
@@ -265,5 +267,98 @@ class AccountController extends Controller {
         }
 
         redirect('tai-khoan/don-hang');
+    }
+
+    /**
+     * Khách hàng chủ động nhập mã để lưu vào kho voucher cá nhân
+     * Chuẩn Shopee: Có ô nhập mã voucher ở đầu kho voucher
+     */
+    public function claimVoucher(): void {
+        Auth::requireLogin();
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $userId = Auth::id();
+            $code = trim($_POST['coupon_code'] ?? '');
+
+            $couponModel = new \Models\Coupon();
+            $result = $couponModel->claimVoucherByCode($userId, $code);
+
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($result);
+                exit;
+            }
+
+            if ($result['success']) {
+                flash('success', $result['message']);
+            } else {
+                flash('error', $result['message']);
+            }
+        }
+
+        redirect('tai-khoan/voucher');
+    }
+
+    /**
+     * Kho voucher và mã ưu đãi riêng của tài khoản người dùng
+     * Chuẩn Shopee: Phân loại Tất cả, Mã Vận Chuyển, Mã Giảm Giá, Đã Sử Dụng, Hết Hạn
+     */
+    public function vouchers(): void {
+        $userId = Auth::id();
+        $user = $this->userModel->findById($userId);
+
+        $couponModel = new \Models\Coupon();
+        
+        // 1. Toàn bộ voucher khả dụng
+        $availableCoupons = $couponModel->getUserWalletCoupons($userId, 'available');
+        
+        // Phân loại khả dụng: Vận chuyển vs Giảm giá
+        $freeshipCoupons = array_values(array_filter($availableCoupons, fn($c) => ($c['loai_voucher'] ?? 'giam_gia') === 'mien_phi_van_chuyen'));
+        $discountCoupons = array_values(array_filter($availableCoupons, fn($c) => ($c['loai_voucher'] ?? 'giam_gia') !== 'mien_phi_van_chuyen'));
+
+        // 2. Voucher đã sử dụng kèm thông tin đơn hàng
+        $usedCoupons = $couponModel->getUsedCouponsWithOrders($userId);
+
+        // 3. Voucher đã hết hạn
+        $expiredCoupons = $couponModel->getUserWalletCoupons($userId, 'expired');
+
+        $counts = [
+            'tat_ca'      => count($availableCoupons),
+            'van_chuyen'  => count($freeshipCoupons),
+            'giam_gia'    => count($discountCoupons),
+            'da_dung'     => count($usedCoupons),
+            'het_han'     => count($expiredCoupons),
+            // Giữ backward-compatible cho kho_voucher
+            'kho_voucher' => count($availableCoupons)
+        ];
+
+        $tab = $_GET['tab'] ?? 'tat_ca';
+        if ($tab === 'kho_voucher') $tab = 'tat_ca';
+        $validTabs = ['tat_ca', 'van_chuyen', 'giam_gia', 'da_dung', 'het_han'];
+        if (!in_array($tab, $validTabs, true)) {
+            $tab = 'tat_ca';
+        }
+
+        if ($tab === 'van_chuyen') {
+            $displayCoupons = $freeshipCoupons;
+        } elseif ($tab === 'giam_gia') {
+            $displayCoupons = $discountCoupons;
+        } elseif ($tab === 'da_dung') {
+            $displayCoupons = $usedCoupons;
+        } elseif ($tab === 'het_han') {
+            $displayCoupons = $expiredCoupons;
+        } else {
+            $displayCoupons = $availableCoupons;
+        }
+
+        $this->view('client.account.vouchers', [
+            'title'           => 'Kho Voucher Của Tôi | ' . APP_NAME,
+            'user'            => $user,
+            'coupons'         => $displayCoupons,
+            'counts'          => $counts,
+            'currentTab'      => $tab,
+            'activeMenu'      => 'vouchers'
+        ]);
     }
 }

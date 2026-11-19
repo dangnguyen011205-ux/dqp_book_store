@@ -76,7 +76,7 @@ function getOrderBookCover(?string $fileName, string $title): string {
                         $isActive = ($currentStatus === $key);
                         $countVal = $counts[$key] ?? 0;
                     ?>
-                        <a href="<?= base_url('tai-khoan/don-hang?status=' . $key) ?>" 
+                        <a href="<?= base_url('tai-khoan/don-hang?status=' . $key . (!empty($search) ? '&q=' . urlencode($search) : '')) ?>" 
                            class="px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all <?= $isActive ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-lowest hover:text-primary' ?>">
                             <span><?= $tab['label'] ?></span>
                             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold <?= $isActive ? 'bg-white/20 text-on-primary' : $tab['badgeClass'] ?>">
@@ -87,20 +87,62 @@ function getOrderBookCover(?string $fileName, string $title): string {
                 </div>
             </div>
 
+            <!-- Ô Tìm Kiếm Đơn Hàng (Theo Mã đơn #BK-... hoặc Tên sách/sản phẩm đã đặt) -->
+            <form method="GET" action="<?= base_url('tai-khoan/don-hang') ?>" class="relative flex items-center">
+                <input type="hidden" name="status" value="<?= htmlspecialchars($currentStatus) ?>"/>
+                <div class="relative w-full">
+                    <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    <input type="text" name="q" value="<?= htmlspecialchars($search ?? '') ?>" 
+                           placeholder="Tìm kiếm đơn hàng theo Mã đơn (#BK-...) hoặc Tên sách đã đặt..." 
+                           class="w-full pl-10 pr-28 py-2.5 bg-surface-container-lowest rounded-xl border border-surface-container text-xs text-primary placeholder:text-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all shadow-xs"/>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <?php if (!empty($search)): ?>
+                            <a href="<?= base_url('tai-khoan/don-hang?status=' . $currentStatus) ?>" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors" title="Xóa tìm kiếm">
+                                <span class="material-symbols-outlined text-[16px]">close</span>
+                            </a>
+                        <?php endif; ?>
+                        <button type="submit" class="px-3.5 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-secondary transition-colors shadow-xs">
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <?php if (!empty($search)): ?>
+                <div class="flex items-center justify-between text-xs text-slate-600 bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 rounded-xl">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-amber-600 text-[16px]">filter_alt</span>
+                        <span>Kết quả tìm kiếm cho: <strong>"<?= htmlspecialchars($search) ?>"</strong> (<?= count($orders) ?> đơn hàng)</span>
+                    </div>
+                    <a href="<?= base_url('tai-khoan/don-hang?status=' . $currentStatus) ?>" class="text-xs font-bold text-amber-800 hover:underline">
+                        Bỏ tìm kiếm
+                    </a>
+                </div>
+            <?php endif; ?>
+
             <!-- Danh Sách Đơn Hàng -->
             <?php if (empty($orders)): ?>
                 <div class="bg-surface-container-lowest rounded-2xl p-12 text-center shadow-sm border border-surface-container">
                     <div class="w-20 h-20 mx-auto rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant mb-4">
                         <span class="material-symbols-outlined text-[40px] text-secondary">receipt_long</span>
                     </div>
-                    <h3 class="text-base font-bold text-primary mb-1">Không có đơn hàng nào</h3>
+                    <h3 class="text-base font-bold text-primary mb-1">
+                        <?= !empty($search) ? 'Không tìm thấy đơn hàng phù hợp' : 'Không có đơn hàng nào' ?>
+                    </h3>
                     <p class="text-xs text-on-surface-variant max-w-sm mx-auto mb-6">
-                        Bạn chưa có đơn hàng nào thuộc trạng thái này. Hãy tìm kiếm những tác phẩm tinh hoa để bổ sung vào tủ sách của bạn.
+                        <?= !empty($search) ? 'Không có đơn hàng nào khớp với mã đơn hoặc tên sách "' . htmlspecialchars($search) . '". Vui lòng kiểm tra lại từ khóa.' : 'Bạn chưa có đơn hàng nào thuộc trạng thái này. Hãy tìm kiếm những tác phẩm tinh hoa để bổ sung vào tủ sách của bạn.' ?>
                     </p>
-                    <a href="<?= base_url('tim-kiem') ?>" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-on-primary rounded-xl font-bold text-xs hover:bg-secondary transition-colors shadow-sm">
-                        <span class="material-symbols-outlined text-[16px]">menu_book</span>
-                        <span>Khám Phá Sách Ngay</span>
-                    </a>
+                    <?php if (!empty($search)): ?>
+                        <a href="<?= base_url('tai-khoan/don-hang?status=' . $currentStatus) ?>" class="inline-flex items-center gap-2 px-6 py-2.5 bg-secondary text-white rounded-xl font-bold text-xs hover:bg-secondary/90 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                            <span>Xem Tất Cả Đơn Hàng</span>
+                        </a>
+                    <?php else: ?>
+                        <a href="<?= base_url('tim-kiem') ?>" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-on-primary rounded-xl font-bold text-xs hover:bg-secondary transition-colors shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                            <span>Khám Phá Sách Ngay</span>
+                        </a>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="space-y-4">

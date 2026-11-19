@@ -144,6 +144,11 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                             (<?= $book['so_danh_gia'] ?> đánh giá)
                         </a>
                     </div>
+                    <!-- Lượt bán thực tế -->
+                    <span class="text-xs text-slate-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-xs">
+                        <span class="material-symbols-outlined text-rose-600 text-[18px]">local_fire_department</span>
+                        <span>Đã bán: <strong class="text-rose-600"><?= number_format($book['luot_ban'] ?? $book['da_ban'] ?? 0) ?></strong> cuốn</span>
+                    </span>
                     <span class="text-xs text-slate-500 flex items-center gap-1">
                         <span class="material-symbols-outlined text-secondary text-[16px]">verified_user</span>
                         <span>Đã lưu hành tại hệ thống</span>
@@ -152,15 +157,26 @@ $savingAmount = $originalPrice - (float)$book['gia'];
 
                 <!-- Price Box & Form Đặt Hàng -->
                 <div class="p-6 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-5">
+                    <?php 
+                    $isFlash = !empty($book['is_flash_sale']) && !empty($book['gia_flash_sale']);
+                    $currentDisplayPrice = $isFlash ? (float)$book['gia_flash_sale'] : (float)$book['gia'];
+                    $originalStrikePrice = $isFlash ? (float)$book['gia'] : (float)$originalPrice;
+                    ?>
+                    <?php if ($isFlash): ?>
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">bolt</span>
+                            <span>Đang Trong Chương Trình Flash Sale Giờ Vàng</span>
+                        </div>
+                    <?php endif; ?>
                     <div class="flex items-baseline gap-3 flex-wrap">
                         <span class="text-3xl font-bold text-rose-600 leading-none">
-                            <?= format_currency($book['gia']) ?>
+                            <?= format_currency($currentDisplayPrice) ?>
                         </span>
                         <span class="text-sm text-slate-400 line-through">
-                            <?= format_currency($originalPrice) ?>
+                            <?= format_currency($originalStrikePrice) ?>
                         </span>
                         <span class="px-2.5 py-0.5 bg-rose-100 text-rose-700 text-xs font-bold rounded-lg">
-                            Tiết kiệm <?= format_currency($savingAmount) ?>
+                            Tiết kiệm <?= format_currency($originalStrikePrice - $currentDisplayPrice) ?>
                         </span>
                     </div>
 
@@ -168,6 +184,38 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                     <form action="<?= base_url('gio-hang/them') ?>" method="POST" class="space-y-4">
                         <?= csrf_field() ?>
                         <input type="hidden" name="sach_id" value="<?= $book['id'] ?>"/>
+                        <input type="hidden" name="coupon_code" id="detail-selected-coupon" value=""/>
+
+                        <!-- Áp dụng Voucher khi Mua Nhanh -->
+                        <?php if (!empty($coupons)): ?>
+                            <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-1.5">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-bold text-amber-950 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[15px] text-amber-600">confirmation_number</span>
+                                        <span>Chọn voucher áp dụng khi Mua Ngay:</span>
+                                    </span>
+                                    <span id="detail-coupon-applied-hint" class="text-rose-600 font-bold hidden text-[11px]">Đã chọn mã!</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <?php foreach ($coupons as $c): 
+                                        $cText = ($c['loai'] === 'phan_tram') ? 'Giảm ' . (int)$c['gia_tri'] . '%' : 'Giảm ' . format_currency($c['gia_tri']);
+                                        $remainUses = $c['remain_uses'] ?? (($c['so_luot_toi_da'] > 0) ? (int)$c['so_luot_toi_da'] : null);
+                                    ?>
+                                        <button type="button" 
+                                                onclick="selectVoucherForQuickBuy('<?= htmlspecialchars($c['ma']) ?>', this)"
+                                                class="detail-voucher-pill px-2.5 py-1.5 bg-white hover:bg-amber-100 text-rose-700 text-[11px] font-bold rounded-lg border border-amber-300 shadow-2xs transition-all flex items-center gap-1.5 active:scale-95"
+                                                title="Đơn tối thiểu: <?= format_currency($c['don_toi_thieu']) ?><?= $remainUses !== null ? ' - Còn ' . $remainUses . ' lượt dùng' : ' - Không giới hạn lượt' ?>">
+                                            <span class="material-symbols-outlined text-[13px]">local_activity</span>
+                                            <span><?= htmlspecialchars($c['ma']) ?></span>
+                                            <span class="text-amber-800 font-semibold">(<?= $cText ?>)</span>
+                                            <span class="text-[9px] bg-rose-100 text-rose-700 px-1 py-0.5 rounded font-extrabold">
+                                                Còn <?= $remainUses !== null ? $remainUses : '∞' ?> lượt
+                                            </span>
+                                        </button>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                             <!-- Bộ tăng giảm số lượng -->
@@ -328,14 +376,16 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                     $pct = $ratingSummary['percentages'][$star] ?? 0;
                     $cnt = $ratingSummary['stars'][$star] ?? 0;
                 ?>
-                    <div class="flex items-center gap-3 text-xs">
-                        <span class="w-12 text-slate-600 font-semibold flex items-center gap-1">
-                            <?= $star ?> <span class="material-symbols-outlined text-[14px] text-amber-500">star</span>
+                    <div class="flex items-center gap-3 text-xs cursor-pointer hover:bg-slate-100/80 p-1 rounded-xl transition-colors group" 
+                         onclick="filterReviewsByStar(<?= $star ?>)" 
+                         title="Lọc xem đánh giá <?= $star ?> sao">
+                        <span class="w-12 text-slate-600 font-semibold flex items-center gap-1 group-hover:text-primary">
+                            <?= $star ?> <span class="material-symbols-outlined text-[14px] text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
                         </span>
                         <div class="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
-                            <div class="h-full bg-amber-500 rounded-full" style="width: <?= $pct ?>%;"></div>
+                            <div class="h-full bg-amber-500 rounded-full group-hover:bg-amber-600 transition-colors" style="width: <?= $pct ?>%;"></div>
                         </div>
-                        <span class="w-12 text-right text-slate-400 font-mono"><?= $cnt ?> (<?= $pct ?>%)</span>
+                        <span class="w-14 text-right text-slate-400 font-mono group-hover:text-slate-600"><?= $cnt ?> (<?= $pct ?>%)</span>
                     </div>
                 <?php endfor; ?>
             </div>
@@ -354,15 +404,25 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                     <input type="hidden" name="sach_id" value="<?= $book['id'] ?>"/>
 
                     <!-- Chọn sao -->
-                    <div class="space-y-1">
+                    <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-700">Đánh giá điểm số của bạn:</label>
-                        <div class="flex items-center gap-2" id="star-picker">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <label class="cursor-pointer text-amber-500 hover:scale-110 transition-transform">
-                                    <input type="radio" name="so_sao" value="<?= $i ?>" <?= $i === 5 ? 'checked' : '' ?> class="sr-only"/>
-                                    <span class="material-symbols-outlined text-[28px] star-icon" data-value="<?= $i ?>" style="font-variation-settings: 'FILL' 1;">star</span>
-                                </label>
-                            <?php endfor; ?>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-1 select-none" id="star-picker">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <label class="cursor-pointer p-0.5 hover:scale-110 transition-transform">
+                                        <input type="radio" name="so_sao" value="<?= $i ?>" <?= $i === 5 ? 'checked' : '' ?> class="sr-only star-radio" id="star-radio-<?= $i ?>"/>
+                                        <span class="material-symbols-outlined text-[32px] star-icon transition-colors duration-150 <?= $i <= 5 ? 'text-amber-400' : 'text-slate-300' ?>" 
+                                              data-value="<?= $i ?>" 
+                                              style="font-variation-settings: 'FILL' <?= $i <= 5 ? 1 : 0 ?>;">star</span>
+                                    </label>
+                                <?php endfor; ?>
+                            </div>
+
+                            <!-- Nhãn hiển thị số sao khi ấn/chọn -->
+                            <span id="star-picker-label" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200 shadow-xs transition-all">
+                                <span class="material-symbols-outlined text-[16px] text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
+                                <span id="star-picker-text">5 / 5 sao - Tuyệt vời</span>
+                            </span>
                         </div>
                     </div>
 
@@ -374,7 +434,7 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                     </div>
 
                     <button type="submit" class="px-6 py-2.5 bg-secondary text-white rounded-xl text-xs font-bold hover:bg-secondary-container hover:text-on-secondary-container transition-all shadow">
-                        Gửi Đánh Giá (Chờ Phê Duyệt)
+                        Gửi Đánh Giá
                     </button>
                 </form>
             <?php else: ?>
@@ -394,14 +454,35 @@ $savingAmount = $originalPrice - (float)$book['gia'];
 
         <!-- Danh Sách Đánh Giá Hiện Có -->
         <div class="space-y-4">
-            <h3 class="text-sm font-bold text-primary">Các Nhận Xét Đã Được Duyệt (<?= count($reviews) ?>)</h3>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-primary">Các Nhận Xét Đã Được Duyệt (<?= count($reviews) ?>)</h3>
+
+                <!-- Bộ lọc theo số sao (Chuẩn TMĐT) -->
+                <div class="flex flex-wrap items-center gap-1.5" id="review-filter-tabs">
+                    <button type="button" onclick="filterReviewsByStar('all', this)" class="review-filter-btn px-3 py-1 rounded-xl text-xs font-bold transition-all bg-primary text-white shadow-xs" data-filter="all">
+                        Tất cả (<?= count($reviews) ?>)
+                    </button>
+                    <?php for ($s = 5; $s >= 1; $s--): 
+                        $sCount = $ratingSummary['stars'][$s] ?? 0;
+                    ?>
+                        <button type="button" onclick="filterReviewsByStar(<?= $s ?>, this)" class="review-filter-btn flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all" data-filter="<?= $s ?>">
+                            <span><?= $s ?> Sao</span>
+                            <span class="text-[10px] text-slate-400 font-mono">(<?= $sCount ?>)</span>
+                        </button>
+                    <?php endfor; ?>
+                </div>
+            </div>
 
             <?php if (empty($reviews)): ?>
                 <p class="text-xs text-slate-500 italic py-4">Chưa có đánh giá nào cho cuốn sách này. Hãy là người đầu tiên mua và để lại cảm nhận!</p>
             <?php else: ?>
-                <div class="divide-y divide-slate-100">
+                <div id="review-filter-empty" class="hidden py-8 text-center text-xs text-slate-500 italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    Không có nhận xét nào phù hợp với bộ lọc số sao này.
+                </div>
+
+                <div class="divide-y divide-slate-100" id="reviews-container">
                     <?php foreach ($reviews as $rev): ?>
-                        <div class="py-5 space-y-2">
+                        <div class="review-item py-5 space-y-2 transition-all" data-star="<?= (int)$rev['so_sao'] ?>">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2.5">
                                     <div class="w-8 h-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center font-bold text-xs">
@@ -418,11 +499,20 @@ $savingAmount = $originalPrice - (float)$book['gia'];
                                     </div>
                                 </div>
 
-                                <!-- Sao -->
-                                <div class="flex text-amber-500">
-                                    <?php for ($s = 1; $s <= 5; $s++): ?>
-                                        <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' <?= $s <= $rev['so_sao'] ? 1 : 0 ?>;">star</span>
-                                    <?php endfor; ?>
+                                <!-- Sao & Số sao hiển thị -->
+                                <div class="flex items-center gap-2">
+                                    <div class="flex items-center">
+                                        <?php for ($s = 1; $s <= 5; $s++): ?>
+                                            <?php if ($s <= $rev['so_sao']): ?>
+                                                <span class="material-symbols-outlined text-[17px] text-amber-400" style="font-variation-settings: 'FILL' 1;">star</span>
+                                            <?php else: ?>
+                                                <span class="material-symbols-outlined text-[17px] text-slate-200" style="font-variation-settings: 'FILL' 0;">star</span>
+                                            <?php endif; ?>
+                                        <?php endfor; ?>
+                                    </div>
+                                    <span class="text-[11px] font-extrabold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/80">
+                                        <?= (int)$rev['so_sao'] ?> / 5 sao
+                                    </span>
                                 </div>
                             </div>
 
@@ -508,6 +598,158 @@ function switchDetailTab(tabNum) {
     if (activeBtn) {
         activeBtn.classList.remove('text-slate-500');
         activeBtn.classList.add('bg-white', 'text-primary', 'border-t', 'border-x', 'border-slate-200');
+    }
+}
+
+function selectVoucherForQuickBuy(code, btn) {
+    const input = document.getElementById('detail-selected-coupon');
+    const hint = document.getElementById('detail-coupon-applied-hint');
+    const allPills = document.querySelectorAll('.detail-voucher-pill');
+
+    if (input.value === code) {
+        // Bỏ chọn
+        input.value = '';
+        if (hint) hint.classList.add('hidden');
+        btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-600');
+        btn.classList.add('bg-white', 'text-rose-700', 'border-amber-300');
+    } else {
+        // Chọn mã này
+        input.value = code;
+        if (hint) {
+            hint.textContent = `✓ Đã chọn mã: ${code}`;
+            hint.classList.remove('hidden');
+        }
+        allPills.forEach(p => {
+            p.classList.remove('bg-rose-600', 'text-white', 'border-rose-600');
+            p.classList.add('bg-white', 'text-rose-700', 'border-amber-300');
+        });
+        btn.classList.remove('bg-white', 'text-rose-700', 'border-amber-300');
+        btn.classList.add('bg-rose-600', 'text-white', 'border-rose-600');
+    }
+}
+
+// ==========================================
+// 1. TƯƠNG TÁC CHỌN SỐ SAO ĐÁNH GIÁ (STAR PICKER)
+// ==========================================
+(function initStarPicker() {
+    const starPicker = document.getElementById('star-picker');
+    if (!starPicker) return;
+
+    const starIcons = starPicker.querySelectorAll('.star-icon');
+    const radios = starPicker.querySelectorAll('.star-radio');
+    const labelBadge = document.getElementById('star-picker-label');
+    const labelText = document.getElementById('star-picker-text');
+
+    const starDescriptions = {
+        1: { text: '1 / 5 sao - Rất tệ', bg: 'bg-rose-50', textCol: 'text-rose-700', border: 'border-rose-200' },
+        2: { text: '2 / 5 sao - Chưa hài lòng', bg: 'bg-orange-50', textCol: 'text-orange-700', border: 'border-orange-200' },
+        3: { text: '3 / 5 sao - Bình thường', bg: 'bg-amber-50', textCol: 'text-amber-700', border: 'border-amber-200' },
+        4: { text: '4 / 5 sao - Hài lòng', bg: 'bg-emerald-50', textCol: 'text-emerald-700', border: 'border-emerald-200' },
+        5: { text: '5 / 5 sao - Tuyệt vời', bg: 'bg-amber-50', textCol: 'text-amber-800', border: 'border-amber-200' }
+    };
+
+    let currentRating = 5;
+    const checkedRadio = Array.from(radios).find(r => r.checked);
+    if (checkedRadio) currentRating = parseInt(checkedRadio.value) || 5;
+
+    function renderStars(rating) {
+        starIcons.forEach(icon => {
+            const val = parseInt(icon.getAttribute('data-value'));
+            if (val <= rating) {
+                icon.style.fontVariationSettings = "'FILL' 1";
+                icon.classList.remove('text-slate-300');
+                icon.classList.add('text-amber-400');
+            } else {
+                icon.style.fontVariationSettings = "'FILL' 0";
+                icon.classList.remove('text-amber-400');
+                icon.classList.add('text-slate-300');
+            }
+        });
+
+        if (labelText && starDescriptions[rating]) {
+            labelText.textContent = starDescriptions[rating].text;
+            if (labelBadge) {
+                labelBadge.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold ${starDescriptions[rating].bg} ${starDescriptions[rating].textCol} border ${starDescriptions[rating].border} shadow-xs transition-all`;
+            }
+        }
+    }
+
+    // Khởi tạo trạng thái ban đầu
+    renderStars(currentRating);
+
+    starIcons.forEach(icon => {
+        const val = parseInt(icon.getAttribute('data-value'));
+
+        // Rê chuột qua sao (hover preview)
+        icon.addEventListener('mouseenter', () => {
+            renderStars(val);
+        });
+
+        // Click chọn sao
+        icon.addEventListener('click', () => {
+            currentRating = val;
+            const targetRadio = document.getElementById('star-radio-' + val);
+            if (targetRadio) {
+                targetRadio.checked = true;
+            }
+            renderStars(currentRating);
+        });
+    });
+
+    radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            currentRating = parseInt(radio.value) || 5;
+            renderStars(currentRating);
+        });
+    });
+
+    // Khi di chuột ra khỏi picker, trả về số sao đã chọn
+    starPicker.addEventListener('mouseleave', () => {
+        renderStars(currentRating);
+    });
+})();
+
+// ==========================================
+// 2. BỘ LỌC ĐÁNH GIÁ THEO SỐ SAO (CHUẨN TMĐT)
+// ==========================================
+function filterReviewsByStar(star, clickedBtn = null) {
+    // Cập nhật giao diện nút tabs
+    const buttons = document.querySelectorAll('.review-filter-btn');
+    buttons.forEach(b => {
+        b.classList.remove('bg-primary', 'text-white', 'shadow-xs');
+        b.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-700');
+    });
+
+    let targetBtn = clickedBtn;
+    if (!targetBtn) {
+        targetBtn = document.querySelector(`.review-filter-btn[data-filter="${star}"]`);
+    }
+
+    if (targetBtn) {
+        targetBtn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-700');
+        targetBtn.classList.add('bg-primary', 'text-white', 'shadow-xs');
+    }
+
+    const items = document.querySelectorAll('.review-item');
+    const emptyNotice = document.getElementById('review-filter-empty');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+        const itemStar = parseInt(item.getAttribute('data-star'));
+        if (star === 'all' || itemStar === parseInt(star)) {
+            item.style.display = '';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    if (emptyNotice) {
+        if (visibleCount === 0 && items.length > 0) {
+            emptyNotice.classList.remove('hidden');
+        } else {
+            emptyNotice.classList.add('hidden');
+        }
     }
 }
 </script>
