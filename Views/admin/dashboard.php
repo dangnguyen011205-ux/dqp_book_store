@@ -482,7 +482,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
                                     <?php if ($order['trang_thai'] === 'cho_xac_nhan'): ?>
-                                        <a href="<?= base_url('admin/don-hang?id=' . $order['id']) ?>" 
+                                        <a href="<?= base_url('admin/don-hang?status=cho_xac_nhan&q=' . $order['id']) ?>" 
                                            class="px-3 py-1.5 rounded-lg bg-secondary text-white hover:bg-secondary-fixed hover:text-primary transition-colors text-[11px] font-bold shadow-2xs">
                                             Xử lý
                                         </a>
