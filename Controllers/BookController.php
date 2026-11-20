@@ -173,4 +173,35 @@ class BookController extends Controller {
 
         redirect('trang-chu');
     }
+
+    /**
+     * AJAX Endpoint: Gợi ý tìm kiếm tức thì cho khách hàng (Autocomplete Search)
+     */
+    public function suggest(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        $q = trim($_GET['q'] ?? '');
+        if (mb_strlen($q, 'UTF-8') < 1) {
+            echo json_encode([
+                'success' => true,
+                'keyword' => '',
+                'books' => [],
+                'authors' => [],
+                'categories' => [],
+                'total' => 0
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $data = $this->bookModel->getSearchSuggestions($q, 6);
+        echo json_encode([
+            'success' => true,
+            'keyword' => $q,
+            'books' => $data['books'],
+            'authors' => $data['authors'],
+            'categories' => $data['categories'],
+            'total' => $data['total'],
+            'all_url' => base_url('tim-kiem?q=' . urlencode($q))
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }

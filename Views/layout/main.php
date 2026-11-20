@@ -155,23 +155,41 @@ $categories = (new Category())->getAll();
                 </div>
             </a>
 
-            <!-- Search Bar -->
-            <div class="flex-1 max-w-2xl hidden lg:block">
-                <form action="<?= base_url('tim-kiem') ?>" method="GET" class="relative flex items-center">
+            <!-- Search Bar with Suggestions -->
+            <div class="flex-1 max-w-2xl hidden md:block relative" id="header-search-wrapper">
+                <form action="<?= base_url('tim-kiem') ?>" method="GET" class="relative flex items-center" id="header-search-form" autocomplete="off">
                     <div class="absolute left-3.5 text-on-surface-variant flex items-center pointer-events-none">
                         <span class="material-symbols-outlined text-[20px]">search</span>
                     </div>
-                    <input name="q" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" 
+                    <input id="header-search-input" name="q" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" 
                            class="w-full pl-10 pr-28 py-2.5 bg-surface-container-low text-on-surface rounded-full text-sm placeholder:text-on-surface-variant/70 focus:outline-none focus:bg-white focus:ring-2 focus:ring-secondary focus:border-transparent transition-all shadow-inner" 
-                           placeholder="Tìm theo tựa sách, tác giả, nhà xuất bản, mã ISBN..." type="text"/>
+                           placeholder="Tìm theo tựa sách, tác giả, nhà xuất bản, mã ISBN..." type="text" autocomplete="off"/>
+                    
+                    <button type="button" id="header-search-clear" class="hidden absolute right-24 text-slate-400 hover:text-slate-600 p-1 rounded-full transition-colors" title="Xóa từ khóa">
+                        <span class="material-symbols-outlined text-[16px] block">close</span>
+                    </button>
+                    <div id="header-search-spinner" class="hidden absolute right-24">
+                        <span class="material-symbols-outlined text-[18px] text-secondary animate-spin block">progress_activity</span>
+                    </div>
+
                     <button type="submit" class="absolute right-1.5 px-5 py-1.5 bg-primary text-white rounded-full text-xs font-semibold hover:bg-secondary transition-colors shadow">
                         Tìm kiếm
                     </button>
                 </form>
+
+                <!-- Search Suggestions Popup Dropdown -->
+                <div id="search-suggestions-box" class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-[100] max-h-[500px] overflow-y-auto animate-fade-in divide-y divide-slate-100">
+                    <!-- Nạp nội dung gợi ý bằng JavaScript -->
+                </div>
             </div>
 
             <!-- Actions: Tra cứu đơn, Giỏ hàng, Tài khoản -->
             <div class="flex items-center gap-4 flex-shrink-0">
+                <!-- Nút tìm kiếm trên Mobile -->
+                <button type="button" onclick="toggleMobileSearch()" class="md:hidden p-2 rounded-xl text-primary hover:bg-surface-container-low transition-colors" title="Tìm kiếm sách">
+                    <span class="material-symbols-outlined text-[24px]">search</span>
+                </button>
+
                 <a class="hidden xl:flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors text-xs font-semibold" href="<?= base_url('tai-khoan/don-hang') ?>">
                     <span class="material-symbols-outlined text-[20px]">local_shipping</span>
                     <span>Tra cứu đơn</span>
@@ -253,6 +271,24 @@ $categories = (new Category())->getAll();
                         </a>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Mobile Search Dropdown Bar (Hiển thị khi click nút tìm kiếm trên mobile) -->
+        <div id="mobile-search-bar" class="hidden md:hidden px-4 py-2.5 bg-white border-t border-slate-100 shadow-md">
+            <div class="relative" id="mobile-search-wrapper">
+                <form action="<?= base_url('tim-kiem') ?>" method="GET" class="relative flex items-center" autocomplete="off">
+                    <div class="absolute left-3 text-on-surface-variant flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-[18px]">search</span>
+                    </div>
+                    <input id="mobile-search-input" name="q" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" 
+                           class="w-full pl-9 pr-20 py-2 bg-surface-container-low text-on-surface rounded-full text-xs placeholder:text-on-surface-variant/70 focus:outline-none focus:bg-white focus:ring-2 focus:ring-secondary transition-all" 
+                           placeholder="Tìm sách, tác giả, ISBN..." type="text" autocomplete="off"/>
+                    <button type="submit" class="absolute right-1 px-3.5 py-1 bg-primary text-white rounded-full text-[11px] font-semibold hover:bg-secondary transition-colors">
+                        Tìm
+                    </button>
+                </form>
+                <div id="mobile-search-suggestions-box" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-[100] max-h-[380px] overflow-y-auto divide-y divide-slate-100"></div>
             </div>
         </div>
 
@@ -378,5 +414,274 @@ $categories = (new Category())->getAll();
     </footer>
 
     <script src="<?= asset('js/main.js') ?>"></script>
+    <script>
+    // Search Autocomplete Suggestion Logic
+    (function() {
+        function setupSearchSuggest(inputId, boxId, clearBtnId, spinnerId, wrapperId) {
+            const input = document.getElementById(inputId);
+            const box = document.getElementById(boxId);
+            const clearBtn = clearBtnId ? document.getElementById(clearBtnId) : null;
+            const spinner = spinnerId ? document.getElementById(spinnerId) : null;
+            const wrapper = document.getElementById(wrapperId);
+
+            if (!input || !box) return;
+
+            let debounceTimer = null;
+            let currentAbort = null;
+            let activeIndex = -1;
+
+            function escapeHtml(str) {
+                return String(str || '').replace(/[&<>"']/g, function(m) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m];
+                });
+            }
+
+            function highlightMatch(text, keyword) {
+                if (!keyword || !text) return escapeHtml(text);
+                const safeText = escapeHtml(text);
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+                return safeText.replace(regex, '<span class="text-secondary font-black bg-secondary/15 px-0.5 rounded">$1</span>');
+            }
+
+            function closeSuggestions() {
+                box.classList.add('hidden');
+                activeIndex = -1;
+            }
+
+            function updateClearBtn() {
+                if (clearBtn) {
+                    if (input.value.trim().length > 0) {
+                        clearBtn.classList.remove('hidden');
+                    } else {
+                        clearBtn.classList.add('hidden');
+                    }
+                }
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    input.value = '';
+                    updateClearBtn();
+                    closeSuggestions();
+                    input.focus();
+                });
+            }
+
+            function fetchSuggestions(query) {
+                query = query.trim();
+                if (query.length < 1) {
+                    closeSuggestions();
+                    if (spinner) spinner.classList.add('hidden');
+                    return;
+                }
+
+                if (spinner) spinner.classList.remove('hidden');
+                if (clearBtn) clearBtn.classList.add('hidden');
+
+                if (currentAbort) currentAbort.abort();
+                currentAbort = new AbortController();
+
+                fetch(`<?= base_url('tim-kiem/goi-y') ?>?q=` + encodeURIComponent(query), {
+                    signal: currentAbort.signal
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (spinner) spinner.classList.add('hidden');
+                    updateClearBtn();
+
+                    if (!res.success) return;
+
+                    renderSuggestions(res, query);
+                })
+                .catch(err => {
+                    if (err.name !== 'AbortError') {
+                        if (spinner) spinner.classList.add('hidden');
+                        updateClearBtn();
+                    }
+                });
+            }
+
+            function renderSuggestions(res, keyword) {
+                const books = res.books || [];
+                const authors = res.authors || [];
+                const categories = res.categories || [];
+                const total = res.total || 0;
+
+                if (total === 0) {
+                    box.innerHTML = `
+                        <div class="p-6 text-center">
+                            <span class="material-symbols-outlined text-[32px] text-slate-300">search_off</span>
+                            <p class="text-xs font-bold text-slate-700 mt-1">Không tìm thấy sách hoặc tác giả phù hợp với "<span class="text-primary font-bold">${escapeHtml(keyword)}</span>"</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Thử tìm theo từ khóa ngắn hơn, tên tác giả hoặc duyệt theo thể loại.</p>
+                        </div>
+                    `;
+                    box.classList.remove('hidden');
+                    activeIndex = -1;
+                    return;
+                }
+
+                let html = '';
+
+                // 1. Thể loại & Tác giả gợi ý
+                if (categories.length > 0 || authors.length > 0) {
+                    html += `
+                        <div class="p-3 bg-slate-50/80">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px]">lightbulb</span>
+                                <span>Danh Mục & Tác Giả Phù Hợp</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                ${categories.map(c => `
+                                    <a href="${c.url}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-secondary hover:text-secondary text-[11px] font-semibold transition-all shadow-2xs">
+                                        <span class="material-symbols-outlined text-[13px] text-secondary">category</span>
+                                        <span>${escapeHtml(c.ten)}</span>
+                                        <span class="text-[10px] text-slate-400">(${c.book_count})</span>
+                                    </a>
+                                `).join('')}
+                                ${authors.map(a => `
+                                    <a href="${a.url}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary text-[11px] font-semibold transition-all shadow-2xs">
+                                        <span class="material-symbols-outlined text-[13px] text-amber-600">person</span>
+                                        <span>${escapeHtml(a.ten)}</span>
+                                        <span class="text-[10px] text-slate-400">(${a.book_count})</span>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 2. Sách gợi ý
+                if (books.length > 0) {
+                    html += `
+                        <div class="py-1.5">
+                            <div class="px-4 py-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span>Tựa Sách Gợi Ý (${books.length})</span>
+                                <span class="text-[10px] font-normal text-slate-400">Ấn ↑ ↓ để di chuyển</span>
+                            </div>
+                            <div class="divide-y divide-slate-100/60">
+                                ${books.map((b, idx) => `
+                                    <a href="${b.url}" class="search-suggest-item flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors group cursor-pointer" data-index="${idx}">
+                                        <img src="${b.anh_bia}" alt="${escapeHtml(b.tieu_de)}" class="w-10 h-14 object-cover rounded shadow-2xs border border-slate-100 shrink-0 group-hover:scale-105 transition-transform" onerror="this.src='<?= asset('images/book-placeholder.jpg') ?>'"/>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-1.5">
+                                                <h4 class="text-xs font-bold text-primary group-hover:text-secondary truncate transition-colors">
+                                                    ${highlightMatch(b.tieu_de, keyword)}
+                                                </h4>
+                                                ${b.is_flash_sale ? `
+                                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-100 text-rose-700 shrink-0">
+                                                        <span class="material-symbols-outlined text-[10px]">bolt</span>
+                                                        Flash
+                                                    </span>
+                                                ` : ''}
+                                            </div>
+                                            <p class="text-[11px] text-slate-500 truncate mt-0.5">
+                                                <span class="text-slate-400">Tác giả:</span> <span class="font-medium text-slate-700">${highlightMatch(b.tac_gia, keyword)}</span>
+                                                ${b.the_loai ? ` • <span class="text-slate-400">${escapeHtml(b.the_loai)}</span>` : ''}
+                                            </p>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-xs font-black text-secondary">${b.gia_formatted}</span>
+                                                ${b.gia_goc_formatted ? `<span class="text-[10px] text-slate-400 line-through">${b.gia_goc_formatted}</span>` : ''}
+                                                ${b.is_out_of_stock ? `<span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 rounded">Hết hàng</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <span class="material-symbols-outlined text-[16px] text-slate-300 group-hover:text-secondary group-hover:translate-x-0.5 transition-all shrink-0">chevron_right</span>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 3. Footer Xem tất cả
+                html += `
+                    <a href="${res.all_url}" class="flex items-center justify-center gap-1.5 py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-primary hover:text-secondary text-xs font-bold transition-colors border-t border-slate-100">
+                        <span>Xem tất cả kết quả cho "${escapeHtml(keyword)}"</span>
+                        <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </a>
+                `;
+
+                box.innerHTML = html;
+                box.classList.remove('hidden');
+                activeIndex = -1;
+            }
+
+            // Event listeners
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                updateClearBtn();
+                const val = this.value;
+                debounceTimer = setTimeout(() => {
+                    fetchSuggestions(val);
+                }, 200);
+            });
+
+            input.addEventListener('focus', function() {
+                if (this.value.trim().length > 0 && box.innerHTML.trim() !== '') {
+                    box.classList.remove('hidden');
+                }
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', function(e) {
+                const items = box.querySelectorAll('.search-suggest-item');
+                if (items.length === 0 || box.classList.contains('hidden')) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeIndex++;
+                    if (activeIndex >= items.length) activeIndex = 0;
+                    highlightItem(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeIndex--;
+                    if (activeIndex < 0) activeIndex = items.length - 1;
+                    highlightItem(items);
+                } else if (e.key === 'Enter') {
+                    if (activeIndex >= 0 && items[activeIndex]) {
+                        e.preventDefault();
+                        items[activeIndex].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    closeSuggestions();
+                }
+            });
+
+            function highlightItem(items) {
+                items.forEach((item, idx) => {
+                    if (idx === activeIndex) {
+                        item.classList.add('bg-slate-100');
+                        item.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        item.classList.remove('bg-slate-100');
+                    }
+                });
+            }
+
+            // Close on click outside
+            document.addEventListener('click', function(e) {
+                if (wrapper && !wrapper.contains(e.target)) {
+                    closeSuggestions();
+                }
+            });
+        }
+
+        // Initialize desktop and mobile search suggest
+        setupSearchSuggest('header-search-input', 'search-suggestions-box', 'header-search-clear', 'header-search-spinner', 'header-search-wrapper');
+        setupSearchSuggest('mobile-search-input', 'mobile-search-suggestions-box', null, null, 'mobile-search-wrapper');
+    })();
+
+    function toggleMobileSearch() {
+        const bar = document.getElementById('mobile-search-bar');
+        if (bar) {
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                const input = document.getElementById('mobile-search-input');
+                if (input) setTimeout(() => input.focus(), 50);
+            }
+        }
+    }
+    </script>
 </body>
 </html>

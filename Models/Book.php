@@ -131,7 +131,8 @@ class Book extends Model {
     /**
      * Lấy chi tiết sách theo ID
      */
-    public function getDetail(int $id): ?array {
+    public function getDetail(int $id, bool $onlyActive = true): ?array {
+        $whereClause = "WHERE s.id = ?" . ($onlyActive ? " AND s.dang_ban = 1" : "");
         $sql = "SELECT s.*, tl.ten AS the_loai_ten, nxb.ten AS nxb_ten, nxb.dia_chi AS nxb_dia_chi,
                        GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
                        COALESCE(AVG(dg.so_sao), 5.0) AS diem_sao,
@@ -144,7 +145,7 @@ class Book extends Model {
                 LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
                 LEFT JOIN `danh_gia` dg ON s.id = dg.sach_id AND dg.trang_thai = 'hien_thi'
                 LEFT JOIN `chi_tiet_don_hang` ctdh ON s.id = ctdh.sach_id
-                WHERE s.id = ? AND s.dang_ban = 1
+                {$whereClause}
                 GROUP BY s.id
                 LIMIT 1";
         
@@ -677,7 +678,7 @@ class Book extends Model {
      * Bật / Tắt trạng thái kinh doanh của sách
      */
     public function toggleStatus(int $id): bool {
-        $sql = "UPDATE `sach` SET `dang_ban` = 1 - `dang_ban` WHERE `id` = ?";
+        $sql = "UPDATE `sach` SET `dang_ban` = IF(COALESCE(`dang_ban`, 1) = 1, 0, 1) WHERE `id` = ?";
         return $this->execute($sql, [$id]);
     }
 
@@ -743,5 +744,137 @@ class Book extends Model {
              LIMIT :lim",
             [':lim' => $limit]
         );
+    }
+
+    /**
+     * Gợi ý tìm kiếm thông minh đa đối tượng (Sách, Tác giả, Thể loại)
+     */
+    public function getSearchSuggestions(string $keyword, int $limit = 6): array {
+        $keyword = trim($keyword);
+        if ($keyword === '') {
+            return ['books' => [], 'authors' => [], 'categories' => [], 'total' => 0];
+        }
+
+        $term = '%' . $keyword . '%';
+        $starts = $keyword . '%';
+
+        // 1. Tìm các tựa sách phù hợp
+        $bookSql = "SELECT s.id, s.tieu_de, s.gia, s.gia_flash_sale, s.is_flash_sale, s.flash_sale_end, s.anh_bia, s.so_luong_ton,
+                           tl.ten AS the_loai_ten,
+                           GROUP_CONCAT(DISTINCT tg.ten SEPARATOR ', ') AS tac_gia_ten,
+                           COALESCE(fs.gia_sale, s.gia_flash_sale) AS effective_flash_price,
+                           CASE 
+                               WHEN fs.id IS NOT NULL AND fs.ket_thuc >= NOW() THEN 1 
+                               WHEN s.is_flash_sale = 1 AND (s.flash_sale_end IS NULL OR s.flash_sale_end >= NOW()) THEN 1 
+                               ELSE 0 
+                           END AS is_flash_active
+                    FROM `sach` s
+                    LEFT JOIN `the_loai` tl ON s.the_loai_id = tl.id
+                    LEFT JOIN `sach_tac_gia` stg ON s.id = stg.sach_id
+                    LEFT JOIN `tac_gia` tg ON stg.tac_gia_id = tg.id
+                    LEFT JOIN (
+                        SELECT fs1.* FROM flash_sale fs1
+                        JOIN (
+                            SELECT sach_id, MAX(id) as max_id 
+                            FROM flash_sale 
+                            WHERE ket_thuc >= NOW() 
+                            GROUP BY sach_id
+                        ) latest ON fs1.id = latest.max_id
+                    ) fs ON fs.sach_id = s.id
+                    WHERE s.dang_ban = 1 AND (s.tieu_de LIKE :term1 OR tg.ten LIKE :term2 OR tl.ten LIKE :term3)
+                    GROUP BY s.id
+                    ORDER BY 
+                        CASE 
+                            WHEN s.tieu_de = :exact THEN 1
+                            WHEN s.tieu_de LIKE :starts1 THEN 2
+                            WHEN tg.ten LIKE :starts2 THEN 3
+                            ELSE 4
+                        END,
+                        s.luot_ban DESC, s.id DESC
+                    LIMIT :lim";
+
+        $stmt = $this->db->prepare($bookSql);
+        $stmt->bindValue(':term1', $term, \PDO::PARAM_STR);
+        $stmt->bindValue(':term2', $term, \PDO::PARAM_STR);
+        $stmt->bindValue(':term3', $term, \PDO::PARAM_STR);
+        $stmt->bindValue(':exact', $keyword, \PDO::PARAM_STR);
+        $stmt->bindValue(':starts1', $starts, \PDO::PARAM_STR);
+        $stmt->bindValue(':starts2', $starts, \PDO::PARAM_STR);
+        $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        $rawBooks = $stmt->fetchAll();
+
+        $books = [];
+        foreach ($rawBooks as $b) {
+            $hasFlash = !empty($b['is_flash_active']) && !empty($b['effective_flash_price']) && (float)$b['effective_flash_price'] < (float)$b['gia'];
+            $currentPrice = $hasFlash ? (float)$b['effective_flash_price'] : (float)$b['gia'];
+            
+            $books[] = [
+                'id' => (int)$b['id'],
+                'tieu_de' => $b['tieu_de'],
+                'tac_gia' => $b['tac_gia_ten'] ?: 'Nhiều tác giả',
+                'the_loai' => $b['the_loai_ten'] ?: '',
+                'anh_bia' => get_book_cover($b['anh_bia']),
+                'gia_goc' => (float)$b['gia'],
+                'gia_hien_tai' => $currentPrice,
+                'gia_formatted' => format_currency($currentPrice),
+                'gia_goc_formatted' => $hasFlash ? format_currency((float)$b['gia']) : null,
+                'is_flash_sale' => $hasFlash,
+                'is_out_of_stock' => ((int)$b['so_luong_ton'] <= 0),
+                'url' => base_url('chi-tiet/' . $b['id'])
+            ];
+        }
+
+        // 2. Tìm tác giả phù hợp
+        $authorSql = "SELECT tg.id, tg.ten, COUNT(DISTINCT stg.sach_id) AS book_count
+                      FROM `tac_gia` tg
+                      JOIN `sach_tac_gia` stg ON tg.id = stg.tac_gia_id
+                      JOIN `sach` s ON stg.sach_id = s.id AND s.dang_ban = 1
+                      WHERE tg.ten LIKE :term
+                      GROUP BY tg.id
+                      ORDER BY book_count DESC
+                      LIMIT 3";
+        $stmtA = $this->db->prepare($authorSql);
+        $stmtA->bindValue(':term', $term, \PDO::PARAM_STR);
+        $stmtA->execute();
+        $rawAuthors = $stmtA->fetchAll();
+        $authors = [];
+        foreach ($rawAuthors as $a) {
+            $authors[] = [
+                'id' => (int)$a['id'],
+                'ten' => $a['ten'],
+                'book_count' => (int)$a['book_count'],
+                'url' => base_url('tim-kiem?tac_gia=' . $a['id'])
+            ];
+        }
+
+        // 3. Tìm thể loại phù hợp
+        $catSql = "SELECT tl.id, tl.ten, COUNT(DISTINCT s.id) AS book_count
+                   FROM `the_loai` tl
+                   JOIN `sach` s ON tl.id = s.the_loai_id AND s.dang_ban = 1
+                   WHERE tl.ten LIKE :term
+                   GROUP BY tl.id
+                   ORDER BY book_count DESC
+                   LIMIT 3";
+        $stmtC = $this->db->prepare($catSql);
+        $stmtC->bindValue(':term', $term, \PDO::PARAM_STR);
+        $stmtC->execute();
+        $rawCats = $stmtC->fetchAll();
+        $categories = [];
+        foreach ($rawCats as $c) {
+            $categories[] = [
+                'id' => (int)$c['id'],
+                'ten' => $c['ten'],
+                'book_count' => (int)$c['book_count'],
+                'url' => base_url('tim-kiem?the_loai=' . $c['id'])
+            ];
+        }
+
+        return [
+            'books' => $books,
+            'authors' => $authors,
+            'categories' => $categories,
+            'total' => count($books) + count($authors) + count($categories)
+        ];
     }
 }

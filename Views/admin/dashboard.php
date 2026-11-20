@@ -395,8 +395,7 @@
                         <th class="py-3 px-4 text-center">Số Cuốn</th>
                         <th class="py-3 px-4 text-right">Tổng Tiền</th>
                         <th class="py-3 px-4">Thanh Toán</th>
-                        <th class="py-3 px-4">Trạng Thái</th>
-                        <th class="py-3 px-4 text-right rounded-r-xl">Thao Tác</th>
+                        <th class="py-3 px-4 text-right rounded-r-xl">Trạng Thái</th>
                     </tr>
                 </thead>
                 <tbody id="milestone-orders-tbody" class="text-xs divide-y divide-slate-100">
@@ -482,19 +481,14 @@
                                     <?= status_badge($order['trang_thai']) ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
-                                    <div class="inline-flex items-center gap-1.5">
-                                        <a href="<?= base_url('tai-khoan/don-hang/chi-tiet/' . $order['id']) ?>" 
-                                           class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-primary hover:bg-slate-200 transition-colors" 
-                                           title="Xem chi tiết & Timeline vận chuyển">
-                                            <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                    <?php if ($order['trang_thai'] === 'cho_xac_nhan'): ?>
+                                        <a href="<?= base_url('admin/don-hang?id=' . $order['id']) ?>" 
+                                           class="px-3 py-1.5 rounded-lg bg-secondary text-white hover:bg-secondary-fixed hover:text-primary transition-colors text-[11px] font-bold shadow-2xs">
+                                            Xử lý
                                         </a>
-                                        <?php if ($order['trang_thai'] === 'cho_xac_nhan'): ?>
-                                            <a href="<?= base_url('admin/don-hang?id=' . $order['id']) ?>" 
-                                               class="px-2.5 py-1 rounded-lg bg-secondary text-white hover:bg-secondary-fixed hover:text-primary transition-colors text-[11px] font-bold">
-                                                Xử lý
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
+                                    <?php else: ?>
+                                        <span class="text-slate-400 text-xs font-semibold">--</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -764,17 +758,10 @@ function selectMilestoneDate(dateStr, formattedDate, revFormatted, orderCount, c
                                 ${escapeHtml(ord.payment_method || 'COD')}
                             </span>
                         </td>
-                        <td class="py-3 px-4">
+                        <td class="py-3 px-4 text-right">
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}">
                                 ${escapeHtml(badge.label)}
                             </span>
-                        </td>
-                        <td class="py-3 px-4 text-right">
-                            <a href="${ord.detail_url}" target="_blank" 
-                               class="inline-flex items-center gap-1 px-3 py-1 bg-primary hover:bg-secondary text-white text-[11px] font-bold rounded-lg shadow-2xs transition-colors">
-                                <span>Chi tiết</span>
-                                <span class="material-symbols-outlined text-[13px]">open_in_new</span>
-                            </a>
                         </td>
                     </tr>
                 `;

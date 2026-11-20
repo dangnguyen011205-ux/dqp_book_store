@@ -617,6 +617,17 @@ class Order extends Model {
 
             $currentStatus = $order['trang_thai'];
 
+            // 1b. Kiểm tra VNPay chưa thanh toán → chỉ cho phép hủy
+            $paymentMethod  = strtoupper($order['phuong_thuc'] ?? '');
+            $paymentStatus  = $order['trang_thai_thanh_toan'] ?? 'cho_thanh_toan';
+            if ($paymentMethod === 'VNPAY' && $paymentStatus !== 'thanh_cong' && $newStatus !== 'da_huy') {
+                $this->rollBack();
+                return [
+                    'success' => false,
+                    'message' => "Đơn hàng #BK-{$orderId} thanh toán qua VNPay chưa hoàn tất. Chỉ có thể hủy đơn hàng này."
+                ];
+            }
+
             // 2. Xử lý logic hoàn kho và mã giảm giá khi HỦY ĐƠN HÀNG
             if ($newStatus === 'da_huy' && $currentStatus !== 'da_huy') {
                 // Hoàn lại tồn kho cho từng sản phẩm

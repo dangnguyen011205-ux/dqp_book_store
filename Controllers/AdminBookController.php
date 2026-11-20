@@ -248,13 +248,19 @@ class AdminBookController extends Controller {
      */
     public function toggleStatus(int $id): void {
         $bookModel = new Book();
-        $book = $bookModel->getDetail($id);
+        $book = $bookModel->getDetail($id, false);
         if ($book) {
             $bookModel->toggleStatus($id);
             $newStatus = $book['dang_ban'] ? 'Ngừng bán' : 'Đang bán';
             set_flash('success', "Đã chuyển sách '{$book['tieu_de']}' sang trạng thái: {$newStatus}.");
         } else {
             set_flash('error', 'Không tìm thấy sách chỉ định.');
+        }
+
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        if (!empty($referer) && strpos($referer, 'admin/sach') !== false) {
+            header('Location: ' . $referer);
+            exit;
         }
 
         redirect('admin/sach');

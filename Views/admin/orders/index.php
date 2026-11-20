@@ -353,7 +353,13 @@
                                     <div class="flex items-center justify-end gap-2">
                                         <!-- Step Action Button Container -->
                                         <div id="action-btn-container-<?= $ord['id'] ?>" class="inline-flex items-center">
-                                            <?php if ($ord['trang_thai'] === 'cho_xac_nhan'): ?>
+                                            <?php if ($isVnPay && !$isPaid && !in_array($ord['trang_thai'], ['hoan_thanh', 'da_huy'])): ?>
+                                                <!-- VNPay chưa thanh toán: chỉ hiện nút hủy, khoá các nút tiến trình -->
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-[10px] font-bold" title="VNPay chưa thanh toán — không thể tiến trình đơn">
+                                                    <span class="material-symbols-outlined text-[13px]">lock</span>
+                                                    <span>Chờ TT VNPay</span>
+                                                </span>
+                                            <?php elseif ($ord['trang_thai'] === 'cho_xac_nhan'): ?>
                                                 <button type="button" onclick="quickStepStatus(<?= $ord['id'] ?>, 'da_xac_nhan')" class="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận đơn hàng">
                                                     <span class="material-symbols-outlined text-[15px]">check_circle</span>
                                                     <span>Xác nhận</span>
@@ -666,7 +672,7 @@
                 updateRowBadge(orderId, newStatus);
                 
                 // 2. Chuyển nút hành động tại hàng sang bước kế tiếp ngay lập tức
-                updateRowActionButton(orderId, newStatus);
+                updateRowActionButton(orderId, newStatus, data.payment_method, data.payment_status);
 
                 // 3. Cập nhật dropdown select nếu có
                 const sel = document.getElementById('quick-select-' + orderId);
@@ -701,9 +707,16 @@
     }
 
     // Cập nhật nút bấm sang bước tiếp theo ngay tại hàng
-    function updateRowActionButton(orderId, status) {
+    function updateRowActionButton(orderId, status, paymentMethod, paymentStatus) {
         const container = document.getElementById('action-btn-container-' + orderId);
         if (!container) return;
+
+        const isVnPayLocked = (paymentMethod === 'VNPAY' && paymentStatus !== 'thanh_cong');
+
+        if (isVnPayLocked && status !== 'hoan_thanh' && status !== 'da_huy') {
+            container.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-[10px] font-bold" title="VNPay chưa thanh toán — không thể tiến trình đơn"><span class="material-symbols-outlined text-[13px]">lock</span><span>Chờ TT VNPay</span></span>`;
+            return;
+        }
 
         if (status === 'cho_xac_nhan') {
             container.innerHTML = `<button type="button" onclick="quickStepStatus(${orderId}, 'da_xac_nhan')" class="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-white font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 active:scale-95" title="Xác nhận đơn hàng"><span class="material-symbols-outlined text-[15px]">check_circle</span><span>Xác nhận</span></button>`;
@@ -781,14 +794,16 @@
         }
 
         // Cập nhật các nút hành động footer của drawer
-        renderDrawerActionButtons(orderId, newStatus);
+        renderDrawerActionButtons(orderId, newStatus, paymentMethod, paymentStatus);
     }
 
     // Render nút hành động Footer của Drawer theo trạng thái
-    function renderDrawerActionButtons(orderId, status) {
+    function renderDrawerActionButtons(orderId, status, paymentMethod, paymentStatus) {
         const actionBtns = document.getElementById('drawerActionButtons');
         if (!actionBtns) return;
         actionBtns.innerHTML = '';
+
+        const isVnPayLocked = (paymentMethod === 'VNPAY' && paymentStatus !== 'thanh_cong');
 
         if (status !== 'da_huy' && status !== 'hoan_thanh') {
             const cancelBtn = document.createElement('button');
@@ -800,6 +815,15 @@
                 }
             };
             actionBtns.appendChild(cancelBtn);
+        }
+
+        // Nếu VNPay chưa thanh toán → chỉ hiện nút hủy + thông báo khoá
+        if (isVnPayLocked && status !== 'da_huy' && status !== 'hoan_thanh') {
+            const lockNote = document.createElement('span');
+            lockNote.className = "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 font-bold text-xs";
+            lockNote.innerHTML = `<span class="material-symbols-outlined text-[15px]">lock</span><span>VNPay chưa thanh toán — không thể tiến trình</span>`;
+            actionBtns.appendChild(lockNote);
+            return; // dừng, không thêm nút tiến trình
         }
 
         if (status === 'cho_xac_nhan') {
@@ -1041,7 +1065,7 @@
         }
 
         // 6. Action buttons in Drawer Footer
-        renderDrawerActionButtons(order.id, order.trang_thai);
+        renderDrawerActionButtons(order.id, order.trang_thai, order.phuong_thuc, order.trang_thai_thanh_toan);
 
         loading.classList.add('hidden');
         content.classList.remove('hidden');

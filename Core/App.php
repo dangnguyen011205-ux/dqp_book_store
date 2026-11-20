@@ -35,6 +35,8 @@ class App
 
         // Khách hàng - Sách & Tìm kiếm
         'tim-kiem' => ['BookController', 'index'],
+        'tim-kiem/goi-y' => ['BookController', 'suggest'],
+        'api/tim-kiem/goi-y' => ['BookController', 'suggest'],
         'sach' => ['BookController', 'index'],
         'sach-moi-ve' => ['BookController', 'index'],
         'sach-ban-chay' => ['BookController', 'index'],
