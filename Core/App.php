@@ -40,8 +40,6 @@ class App
         'sach' => ['BookController', 'index'],
         'sach-moi-ve' => ['BookController', 'index'],
         'sach-ban-chay' => ['BookController', 'index'],
-        'khuyen-mai-hot' => ['BookController', 'index'],
-        'tu-sach-tinh-hoa' => ['BookController', 'index'],
         'chi-tiet/(\d+)' => ['BookController', 'detail'],
         'sach/(\d+)' => ['BookController', 'detail'],
         'danh-gia/gui' => ['BookController', 'addReview'],
